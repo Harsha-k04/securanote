@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+<head>
+    <title>Vault Dashboard</title>
+    <style>
+        .flash-message {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            animation: fadeOut 1s ease-in-out 3s forwards;
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                height: 0;
+                padding: 0;
+                margin: 0;
+                overflow: hidden;
+            }
+        }
+
+        .note-actions {
+            margin-top: 5px;
+        }
+
+        .note-actions form {
+            display: inline;
+            margin-right: 5px;
+        }
+
+        .note-preview {
+            margin-top: 10px;
+        }
+
+        .note-preview img {
+            max-width: 200px;
+            border: 1px solid #ccc;
+            margin-top: 5px;
+        }
+
+        .note-preview audio {
+            display: block;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            {% if category == 'success' %}
+                <div class="flash-message">{{ message }}</div>
+            {% endif %}
+        {% endfor %}
+    {% endwith %}
+
+    <h2>Welcome, {{ user.username }}!</h2>
+
+    <h3>Add a Note</h3>
+    <form method="POST" enctype="multipart/form-data">
+        <input name="title" placeholder="Note Title" required><br>
+        <textarea name="content" placeholder="Note content" required></textarea><br>
+        <input type="file" name="file" accept="image/*,audio/*"><br>
+        <select name="encryption_type" required>
+            <option value="AES">AES</option>
+            <option value="ChaCha">ChaCha</option>
+        </select><br>
+        <label for="pin">Enter a 4-digit PIN to secure this note:</label><br>
+        <input type="password" name="pin" required minlength="4" maxlength="6"><br>
+        <button type="submit">Save</button>
+    </form>
+
+    <h3>Your Notes</h3>
+    {% for note in notes %}
+        <div style="border: 1px solid #ccc; padding: 10px; margin: 5px;">
+            <strong>{{ note.title }}</strong><br>
+            <small>Created: {{ note.timestamp|localtime }}</small><br><br>
+            <small>Encrypted with: {{ note.encryption_type }}</small><br>
+
+
+
+            <div class="note-preview">
+                {% if note.file_path %}
+                    {% set file_url = url_for('static', filename='uploads/' ~ note.file_path) %}
+                    
+                   
+                    
+                   
+                {% endif %}
+            </div>
+
+            <div class="note-actions">
+                <!-- View button -->
+                <form action="{{ url_for('notes.view_note', note_id=note.id) }}" method="GET">
+                    <button type="submit">View</button>
+                </form>
+
+                <!-- Delete button -->
+                <form action="{{ url_for('notes.delete_note', note_id=note.id) }}" method="POST">
+                    <button type="submit" onclick="return confirm('Delete this note?')">Delete</button>
+                </form>
+                <form action="{{ url_for('notes.edit_note', note_id=note.id) }}" method="GET" style="display:inline;">
+                    <button type="submit">Edit</button>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        <p>No notes yet.</p>
+    {% endfor %}
+
+    <p><a href="{{ url_for('auth.logout') }}">Logout</a></p>
+</body>
+</html>

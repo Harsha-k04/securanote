@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+    <title>Edit Note</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        #pin-field {
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #007BFF;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h2>Edit Note</h2>
+
+    <form method="POST">
+        <label>Title:</label>
+        <input name="title" value="{{ note.title }}" required>
+
+        <label>Content:</label>
+        <textarea name="content" required>{{ decrypted }}</textarea>
+
+        <label>Encryption Type:</label>
+        <select name="encryption_type" required>
+            <option value="AES" {% if note.encryption_type == 'AES' %}selected{% endif %}>AES</option>
+            <option value="ChaCha" {% if note.encryption_type == 'ChaCha' %}selected{% endif %}>ChaCha</option>
+        </select>
+
+        <label>
+            <input type="checkbox" id="change-pin-toggle" onchange="togglePin()"> Change PIN
+        </label>
+
+        <div id="pin-field" style="display: none;">
+            <label>New 4-digit PIN:</label>
+            <input type="password" name="pin" minlength="4" maxlength="6">
+        </div>
+
+        <button type="submit">Save Changes</button>
+    </form>
+
+    <a href="{{ url_for('notes.dashboard') }}">← Back to Dashboard</a>
+
+    <script>
+        function togglePin() {
+            const pinField = document.getElementById("pin-field");
+            pinField.style.display = pinField.style.display === "none" ? "block" : "none";
+        }
+    </script>
+</body>
+</html>

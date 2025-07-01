@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head><title>{{ note.title }}</title></head>
+<body>
+    <h2>{{ note.title }}</h2>
+    <pre>{{ decrypted }}</pre>
+
+    {% if file_url %}
+        {% if file_ext in ['jpg', 'jpeg', 'png'] %}
+            <img src="{{ file_url }}" style="max-width: 400px;">
+        {% elif file_ext == 'mp3' %}
+            <audio controls src="{{ file_url }}"></audio>
+        {% elif file_ext == 'mp4' %}
+            <video controls src="{{ file_url }}" style="max-width: 400px;"></video>
+        {% endif %}
+    {% endif %}
+</body>
+</html>

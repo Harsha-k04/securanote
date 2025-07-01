@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify PIN to Edit Note</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        input, button {
+            padding: 8px;
+            width: 250px;
+            margin-bottom: 10px;
+        }
+        p.message {
+            color: red;
+        }
+        .message-error {
+            color: red;
+        }
+        .message-info {
+            color: blue;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Enter PIN to Edit Note</h2>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+        <p class="message-{{ category }}">{{ message }}</p>
+    {% endfor %}
+{% endwith %}
+
+<form method="POST">
+    <label>PIN:</label><br>
+    <input type="password" name="pin" id="pin" minlength="4" maxlength="6" required>
+    <input type="checkbox" onclick="togglePin()"> Show PIN<br><br>
+    <button type="submit">Verify</button>
+</form>
+
+<p><a href="{{ url_for('notes.dashboard') }}">← Back to Dashboard</a></p>
+
+<script>
+function togglePin() {
+    var x = document.getElementById("pin");
+    if (x.type === "password") {
+        x.type = "text";
+    } else {
+        x.type = "password";
+    }
+}
+</script>
+
+</body>
+</html>

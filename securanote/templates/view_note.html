@@ -1,0 +1,59 @@
+<h2>{{ note.title }}</h2>
+<p>{{ decrypted }}</p>
+
+
+{% if note.file_path %}
+  <h5>Attached File:</h5>
+  {% set ext = note.file_path.rsplit('.', 1)[-1].lower() %}
+  
+  {% if ext in ['png', 'jpg', 'jpeg', 'gif'] %}
+    <img src="{{ file_url }}" width="300">
+  
+  {% elif ext == 'mp3' %}
+    <audio controls>
+      <source src="{{ file_url }}" width="300"  type="audio/mpeg">
+      Your browser does not support the audio element.
+    </audio>
+
+  {% elif ext in ['mp4', 'webm', 'ogg'] and file_url %}
+    <video width="640" height="360" controls>
+        <source src="{{ file_url }}" type="video/{{ file_ext }}">
+        Your browser does not support the video tag.
+    </video>
+
+  {% else %}
+    <a href="{{ url_for('notes.view_file', filename=note.file_path) }}" target="_blank">Download File</a>
+  {% endif %}
+{% endif %}
+
+
+<form action="{{ url_for('notes.export_pdf') }}" method="POST">
+    <input type="hidden" name="title" value="{{ note.title }}">
+    <textarea name="content" style="display:none;">{{ decrypted }}</textarea>
+    {% if note.file_path %}
+        <input type="hidden" name="file_path" value="{{ note.file_path }}">
+    {% endif %}
+    <button type="submit" class="btn btn-primary">Download as PDF</button>
+</form>
+
+<h5>Generate Sharable Link</h5>
+<form method="POST">
+    <input type="hidden" name="generate_link" value="1">
+    <label>
+      <input type="checkbox" name="share_note" value="yes">
+      Allow one-time view
+    </label>
+
+    <button type="submit" class="btn btn-success mt-2">Generate Link</button>
+</form>
+
+{% if share_link %}
+<div class="mt-3">
+    <label><strong>Sharable Link:</strong></label>
+    <input type="text" class="form-control" value="{{ share_link }}" readonly onclick="this.select();">
+</div>
+{% endif %}
+
+<p><a href="{{ url_for('notes.dashboard') }}">Back to Dashboard</a></p>
+
+

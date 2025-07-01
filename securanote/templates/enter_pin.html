@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head>
+    <title>Enter PIN</title>
+    <style>
+        .flash-danger {
+            padding: 10px;
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h3>Enter PIN to {{ purpose or "view" }} this note</h3>
+
+    <!-- Flash Message for Wrong PIN -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            {% if category == 'danger' %}
+                <div class="flash-danger">{{ message }}</div>
+            {% endif %}
+        {% endfor %}
+    {% endwith %}
+
+    <form method="POST">
+        <input type="password" name="pin" placeholder="4-digit PIN" required minlength="4" maxlength="6">
+        <button type="submit">Submit</button>
+    </form>
+    <p><a href="{{ url_for('notes.dashboard') }}">← Back</a></p>
+</body>
+</html>

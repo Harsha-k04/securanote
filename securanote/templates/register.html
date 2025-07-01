@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register</title>
+    <style>
+        .valid { color: green; }
+        .invalid { color: red; }
+    </style>
+</head>
+<body>
+    <h2>Register</h2>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.username.label }}<br>
+            {{ form.username(size=32) }}
+        </p>
+        <p>
+            {{ form.email.label }}<br>
+            {{ form.email(size=32) }}
+        </p>
+        <p>
+            {{ form.password.label }}<br>
+            {{ form.password(size=32, id='password', type='password') }}
+            <br>
+            <input type="checkbox" id="show-password"> Show Password
+        </p>
+
+        <div id="password-requirements">
+            <p>Password must include:</p>
+            <ul>
+                <li id="length" class="invalid">At least 8 characters</li>
+                <li id="uppercase" class="invalid">An uppercase letter</li>
+                <li id="lowercase" class="invalid">A lowercase letter</li>
+                <li id="number" class="invalid">A number</li>
+                <li id="special" class="invalid">A special character (!@#$%^&* etc.)</li>
+            </ul>
+        </div>
+
+        <p>{{ form.submit() }}</p> 
+    </form>
+    <p>Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a></p>
+
+    <script>
+        const passwordInput = document.getElementById('password');
+        const showPassword = document.getElementById('show-password');
+        const length = document.getElementById('length');
+        const uppercase = document.getElementById('uppercase');
+        const lowercase = document.getElementById('lowercase');
+        const number = document.getElementById('number');
+        const special = document.getElementById('special');
+
+        // Toggle password visibility
+        showPassword.addEventListener('change', function () {
+            passwordInput.type = this.checked ? 'text' : 'password';
+        });
+
+        // Live password validation
+        passwordInput.addEventListener('input', function () {
+            const value = passwordInput.value;
+
+            length.className = value.length >= 8 ? 'valid' : 'invalid';
+            uppercase.className = /[A-Z]/.test(value) ? 'valid' : 'invalid';
+            lowercase.className = /[a-z]/.test(value) ? 'valid' : 'invalid';
+            number.className = /[0-9]/.test(value) ? 'valid' : 'invalid';
+            special.className = /[\W_]/.test(value) ? 'valid' : 'invalid';
+        });
+    </script>
+</body>
+</html>

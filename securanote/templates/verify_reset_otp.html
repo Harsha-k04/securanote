@@ -1,0 +1,23 @@
+<form method="POST">
+    <p>Enter OTP:<br><input type="text" name="otp" required></p>
+    <input type="submit" value="Verify OTP">
+</form>
+
+<form method="POST" action="{{ url_for('auth.resend_reset_otp') }}">
+    <button type="submit" id="resendBtn" disabled>Resend OTP (10s)</button>
+</form>
+
+<script>
+    let countdown = 10;
+    const btn = document.getElementById('resendBtn');
+    const interval = setInterval(() => {
+        if (countdown > 0) {
+            btn.innerText = `Resend OTP (${countdown}s)`;
+            countdown--;
+        } else {
+            btn.innerText = "Resend OTP";
+            btn.disabled = false;
+            clearInterval(interval);
+        }
+    }, 1000);
+</script>
