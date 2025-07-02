@@ -1,7 +1,5 @@
 from securanote import create_app
 from flask import redirect, Response
-import threading
-import webbrowser
 import os
 from flask import send_file, current_app
 from securanote.utils import decrypt_video_file
@@ -38,9 +36,10 @@ def serve_chacha_video():
         return f"Error: {e}", 500
 
 # 👇 Optional: Automatically open browser
-def open_browser():
-    webbrowser.open("http://localhost:5000/")
+
 
 if __name__ == "__main__":
-    threading.Timer(1.5, open_browser).start()
-    app.run(debug=True, use_reloader=False)
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, host="0.0.0.0", port=port)
+
