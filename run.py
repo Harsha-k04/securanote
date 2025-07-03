@@ -1,15 +1,21 @@
 from securanote import create_app
 from flask import redirect, Response
-import threading
-import webbrowser
 import os
 from flask import send_file, current_app
 from securanote.utils import decrypt_video_file
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
 
 # 👇 Make sure to import this
 from securanote.utils import decrypt_video_file  # update the path based on your structure
 
 app = create_app()
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["100 per hour"]  # Or whatever rate you prefer
+)
 
 @app.route("/")
 def index():
@@ -36,11 +42,9 @@ def serve_chacha_video():
 
     except Exception as e:
         return f"Error: {e}", 500
+application = app
 
-# 👇 Optional: Automatically open browser
-def open_browser():
-    webbrowser.open("http://localhost:5000/")
 
 if __name__ == "__main__":
-    threading.Timer(1.5, open_browser).start()
+  
     app.run(debug=True, use_reloader=False)

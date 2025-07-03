@@ -176,9 +176,3 @@ def delete_file_from_s3(filename: str) -> bool:
         print("Delete failed:", e)
         return False
 
-# ----------------------------- #
-# Debug Output
-# ----------------------------- #
-print("AWS KEY:", os.getenv("AWS_ACCESS_KEY_ID"))
-print("AWS SECRET:", os.getenv("AWS_SECRET_ACCESS_KEY"))
-print("BUCKET:", os.getenv("AWS_S3_BUCKET"))
