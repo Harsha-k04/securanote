@@ -25,7 +25,7 @@ def send_otp(recipient_email, otp):
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'securanote-super-secret-key')
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:hk04@localhost:5432/securanote_db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI')
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     app.config['MAIL_PORT'] = 587
     app.config['MAIL_USE_TLS'] = True
