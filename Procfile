@@ -1,1 +1,1 @@
-web: gunicorn securanote:create_app()
+Procfile: web: gunicorn run:app
