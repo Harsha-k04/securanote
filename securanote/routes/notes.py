@@ -410,11 +410,11 @@ def export_pdf():
 def shared_note(token):
     note = Note.query.filter_by(share_token=token).first_or_404()
 
-    # Handle view-once logic
+    # 1. Handle view limit
     if note.views_left is not None and note.views_left <= 0:
         return "<h3>This note is no longer available (view limit reached).</h3>"
 
-    # Decrypt content
+    # 2. Decrypt content
     try:
         if note.encryption_type == 'AES':
             decrypted = fernet.decrypt(note.encrypted_content.encode()).decode()
@@ -425,7 +425,7 @@ def shared_note(token):
     except Exception as e:
         return f"<h3>Decryption error: {e}</h3>"
 
-    # Decrypt file if present
+    # 3. Decrypt file if present
     file_url = None
     file_ext = None
     if note.file_path:
@@ -449,7 +449,7 @@ def shared_note(token):
             except Exception as e:
                 return f"<h3>File decryption error: {e}</h3>"
 
-    # ✅ Render first (do not decrement before rendering)
+    # 4. Render note page
     rendered = render_template(
         "shared_note.html",
         note=note,
@@ -458,13 +458,18 @@ def shared_note(token):
         file_ext=file_ext
     )
 
-    # ✅ Decrease view count AFTER successful rendering
-    if note.views_left is not None:
+    # 5. Detect preview bots (WhatsApp, Telegram, Discord, Facebook)
+    user_agent = request.headers.get("User-Agent", "").lower()
+    preview_bots = ['discordbot', 'facebookexternalhit', 'whatsapp', 'telegrambot', 'twitterbot', 'slackbot']
+
+    is_preview = any(bot in user_agent for bot in preview_bots)
+
+    # 6. Only decrement view count if it's NOT a bot
+    if not is_preview and note.views_left is not None:
         note.views_left -= 1
         db.session.commit()
 
     return rendered
-
 # Temporary media serving (non-saved decryption stream)
 @notes_bp.route("/temp_media/<key>/<filename>")
 def serve_temp_media(key, filename):
