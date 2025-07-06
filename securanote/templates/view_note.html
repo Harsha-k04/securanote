@@ -35,24 +35,27 @@
     {% endif %}
     <button type="submit" class="btn btn-primary">Download as PDF</button>
 </form>
-
-<h5>Generate Sharable Link</h5>
+<h5>Generate Shareable Link</h5>
 <form method="POST">
-    <input type="hidden" name="generate_link" value="1">
-    <label>
-      <input type="checkbox" name="share_note" value="yes">
-      Allow one-time view
-    </label>
+  <input type="hidden" name="generate_link" value="1">
 
-    <button type="submit" class="btn btn-success mt-2">Generate Link</button>
+  <div class="form-check mb-2">
+    <input class="form-check-input" type="checkbox" name="view_once" id="view_once">
+    <label class="form-check-label" for="view_once">
+      View Once Only
+    </label>
+  </div>
+
+  <button type="submit" class="btn btn-success">Generate Link</button>
 </form>
 
 {% if share_link %}
-<div class="mt-3">
+  <div class="mt-3">
     <label><strong>Sharable Link:</strong></label>
     <input type="text" class="form-control" value="{{ share_link }}" readonly onclick="this.select();">
-</div>
+  </div>
 {% endif %}
+
 
 <p><a href="{{ url_for('notes.dashboard') }}">Back to Dashboard</a></p>
 
