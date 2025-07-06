@@ -31,7 +31,7 @@ def create_app():
     app.config['MAIL_USE_TLS'] = True
     app.config['MAIL_USERNAME'] = 'harsha332004@gmail.com' # your email
     app.config['MAIL_PASSWORD'] = 'mjnk wgzh skrb bmsx'  # app password
-    app.config['MAIL_DEFAULT_SENDER'] = 'your_email@example.com'
+    app.config['MAIL_DEFAULT_SENDER'] = 'harsha332004@gmail.com'
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=7)
     app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
 
