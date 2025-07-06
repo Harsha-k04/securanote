@@ -449,18 +449,21 @@ def shared_note(token):
             except Exception as e:
                 return f"<h3>File decryption error: {e}</h3>"
 
-    # ✅ Decrease view count if it's a one-time or limited-view share
-    if note.views_left is not None:
-        note.views_left -= 1
-        db.session.commit()
-
-    return render_template(
+    # ✅ Render first (do not decrement before rendering)
+    rendered = render_template(
         "shared_note.html",
         note=note,
         decrypted=decrypted,
         file_url=file_url,
         file_ext=file_ext
     )
+
+    # ✅ Decrease view count AFTER successful rendering
+    if note.views_left is not None:
+        note.views_left -= 1
+        db.session.commit()
+
+    return rendered
 
 # Temporary media serving (non-saved decryption stream)
 @notes_bp.route("/temp_media/<key>/<filename>")
