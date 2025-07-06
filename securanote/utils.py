@@ -182,4 +182,3 @@ def delete_file_from_s3(filename: str) -> bool:
     except Exception as e:
         print("Delete failed:", e)
         return False
-
