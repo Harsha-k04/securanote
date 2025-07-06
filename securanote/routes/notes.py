@@ -167,7 +167,7 @@ def view_note(note_id):
             note.share_token = uuid.uuid4().hex
             note.views_left = 1 if view_once else None  # One view if checkbox is selected, else unlimited
             db.session.commit()
-            share_link = url_for("notes.shared_note_view", token=note.share_token, _external=True)
+            share_link = url_for("notes.shared_note", token=note.share_token, _external=True)
 
 
     if request.method == "GET":
@@ -224,7 +224,7 @@ def view_note(note_id):
             flash(f"File decryption failed: {e}", "danger")
 
     if not share_link and note.share_token:
-        share_link = url_for("notes.shared_note_view", token=note.share_token, _external=True)
+        share_link = url_for("notes.shared_note", token=note.share_token, _external=True)
 
     return render_template(
         "view_note.html",
@@ -407,7 +407,7 @@ def export_pdf():
 
 
 @notes_bp.route("/shared/<token>", methods=["GET"])
-def shared_note_view(token):
+def shared_note(token):
     note = Note.query.filter_by(share_token=token).first_or_404()
 
     # Handle view-once logic
@@ -455,7 +455,7 @@ def shared_note_view(token):
         db.session.commit()
 
     return render_template(
-        "shared_view.html",
+        "shared_note.html",
         note=note,
         decrypted=decrypted,
         file_url=file_url,
