@@ -156,14 +156,21 @@ def upload_file_to_s3(encrypted_data: bytes, filename: str) -> bool:
 
 def download_file_from_s3(filename: str) -> bytes:
     try:
+        print(f"Trying to download: {filename}")
         response = s3_client.get_object(
             Bucket=os.getenv("AWS_S3_BUCKET"),
             Key=filename
         )
-        return response['Body'].read()
-    except Exception as e:
-        print("Download failed:", e)
+        data = response['Body'].read()
+        print(f"Downloaded {len(data)} bytes from S3 for {filename}")
+        return data
+    except s3_client.exceptions.NoSuchKey:
+        print(f"❌ S3 Error: File not found in S3 - {filename}")
         return None
+    except Exception as e:
+        print(f"❌ S3 download failed: {e}")
+        return None
+
 
 def delete_file_from_s3(filename: str) -> bool:
     try:
