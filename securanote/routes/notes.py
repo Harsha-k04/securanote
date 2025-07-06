@@ -163,13 +163,12 @@ def view_note(note_id):
                 return render_template("enter_pin.html", note=note, attempts=session[attempt_key])
 
         elif "generate_link" in request.form:
-            views = int(request.form.get("views_left", 1))
-            minutes = int(request.form.get("expiry_minutes", 10))
+            view_once = request.form.get("view_once") == "on"
             note.share_token = uuid.uuid4().hex
-            note.views_left = views
-            note.share_expiry = datetime.utcnow() + timedelta(minutes=minutes)
+            note.views_left = 1 if view_once else None  # One view if checkbox is selected, else unlimited
             db.session.commit()
             share_link = url_for("notes.shared_note_view", token=note.share_token, _external=True)
+
 
     if request.method == "GET":
         return render_template("enter_pin.html", note=note, attempts=session[attempt_key])
@@ -411,9 +410,11 @@ def export_pdf():
 def shared_note_view(token):
     note = Note.query.filter_by(share_token=token).first_or_404()
 
+    # Handle view-once logic
     if note.views_left is not None and note.views_left <= 0:
         return "<h3>This note is no longer available (view limit reached).</h3>"
 
+    # Decrypt content
     try:
         if note.encryption_type == 'AES':
             decrypted = fernet.decrypt(note.encrypted_content.encode()).decode()
@@ -424,7 +425,7 @@ def shared_note_view(token):
     except Exception as e:
         return f"<h3>Decryption error: {e}</h3>"
 
-    # Handle file
+    # Decrypt file if present
     file_url = None
     file_ext = None
     if note.file_path:
@@ -440,19 +441,27 @@ def shared_note_view(token):
                 temp_folder = os.path.join(current_app.root_path, 'static', 'temp')
                 os.makedirs(temp_folder, exist_ok=True)
                 decrypted_path = os.path.join(temp_folder, note.file_path)
+
                 with open(decrypted_path, 'wb') as f:
                     f.write(decrypted_data)
 
                 file_url = url_for('static', filename=f'temp/{note.file_path}')
-            except:
-                pass
+            except Exception as e:
+                return f"<h3>File decryption error: {e}</h3>"
 
-    # Decrease view count
+    # ✅ Decrease view count if it's a one-time or limited-view share
     if note.views_left is not None:
         note.views_left -= 1
         db.session.commit()
 
-    return render_template("shared_view.html", note=note, decrypted=decrypted, file_url=file_url, file_ext=file_ext)
+    return render_template(
+        "shared_view.html",
+        note=note,
+        decrypted=decrypted,
+        file_url=file_url,
+        file_ext=file_ext
+    )
+
 # Temporary media serving (non-saved decryption stream)
 @notes_bp.route("/temp_media/<key>/<filename>")
 def serve_temp_media(key, filename):
