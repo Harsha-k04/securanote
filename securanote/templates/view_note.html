@@ -53,76 +53,42 @@
         <input type="text" class="form-control" value="{{ share_link }}" readonly onclick="this.select();">
 
         <div class="mt-2">
-            <!-- Share link via WhatsApp -->
-            <a href="https://wa.me/?text={{ share_link | urlencode }}" target="_blank" class="btn btn-success btn-sm">
-                Share Link via WhatsApp
-            </a>
-
-            <!-- Share link via Telegram -->
-            <a href="https://t.me/share/url?url={{ share_link | urlencode }}" target="_blank" class="btn btn-primary btn-sm">
-                Share Link via Telegram
-            </a>
-
-            <!-- Share link via Email -->
-            <a href="mailto:?subject=Note&body={{ share_link | urlencode }}" class="btn btn-secondary btn-sm">
-                Share Link via Email
-            </a>
+            <a href="https://wa.me/?text={{ share_link | urlencode }}" target="_blank" class="btn btn-success btn-sm">Share Link via WhatsApp</a>
+            <a href="https://t.me/share/url?url={{ share_link | urlencode }}" target="_blank" class="btn btn-primary btn-sm">Share Link via Telegram</a>
+            <a href="mailto:?subject=Note&body={{ share_link | urlencode }}" class="btn btn-secondary btn-sm">Share Link via Email</a>
         </div>
     </div>
 {% endif %}
 
 {% if qr_image_url %}
-  <p><strong>QR Code:</strong></p>
-  <img src="{{ qr_image_url }}" alt="QR Code" style="max-width: 200px;">
-  <p>You can scan or share this QR via WhatsApp, Telegram, Email, etc.</p>
+    <div class="mt-4">
+        <p><strong>QR Code:</strong></p>
+        <img src="{{ qr_image_url }}" alt="QR Code" style="max-width: 200px;">
+        <p>You can scan or share this QR via WhatsApp, Telegram, Email, etc.</p>
 
-  <div class="mt-2">
-    <!-- WhatsApp share -->
-    <a href="https://api.whatsapp.com/send?text={{ qr_image_url }}" target="_blank">
-      <button class="btn btn-success">Share via WhatsApp</button>
-    </a>
-
-    <!-- Telegram share -->
-    <a href="https://t.me/share/url?url={{ qr_image_url }}" target="_blank">
-      <button class="btn btn-info">Share via Telegram</button>
-    </a>
-
-    <!-- Email share -->
-    <a href="mailto:?subject=QR%20Code%20for%20Your%20Note&body={{ qr_image_url }}">
-      <button class="btn btn-dark">Share via Email</button>
-    </a>
-
-    <!-- Native Share API (mobile only) -->
-    <button onclick="shareQR()" class="btn btn-primary">Share with App</button>
-  </div>
-{% endif %}{% if qr_image_url %}
-  <p><strong>QR Code:</strong></p>
-  <img src="{{ qr_image_url }}" alt="QR Code" style="max-width: 200px;">
-  <p>You can scan or share this QR via WhatsApp, Telegram, Email, etc.</p>
-
-  <div class="mt-2">
-    <!-- WhatsApp share -->
-    <a href="https://api.whatsapp.com/send?text={{ qr_image_url }}" target="_blank">
-      <button class="btn btn-success">Share via WhatsApp</button>
-    </a>
-
-    <!-- Telegram share -->
-    <a href="https://t.me/share/url?url={{ qr_image_url }}" target="_blank">
-      <button class="btn btn-info">Share via Telegram</button>
-    </a>
-
-    <!-- Email share -->
-    <a href="mailto:?subject=QR%20Code%20for%20Your%20Note&body={{ qr_image_url }}">
-      <button class="btn btn-dark">Share via Email</button>
-    </a>
-
-    <!-- Native Share API (mobile only) -->
-    <button onclick="shareQR()" class="btn btn-primary">Share with App</button>
-  </div>
+        <div class="mt-2">
+            <a href="https://api.whatsapp.com/send?text={{ qr_image_url }}" target="_blank" class="btn btn-success">Share via WhatsApp</a>
+            <a href="https://t.me/share/url?url={{ qr_image_url }}" target="_blank" class="btn btn-info">Share via Telegram</a>
+            <a href="mailto:?subject=QR%20Code%20for%20Your%20Note&body={{ qr_image_url }}" class="btn btn-dark">Share via Email</a>
+            <button onclick="shareQR()" class="btn btn-primary">Share with App</button>
+        </div>
+    </div>
 {% endif %}
-
-
 
 <hr>
 
 <p><a href="{{ url_for('notes.dashboard') }}">Back to Dashboard</a></p>
+
+<script>
+function shareQR() {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Secure Note QR Code',
+            text: 'Here is your QR code to access the note.',
+            url: "{{ qr_image_url }}"
+        }).catch((error) => console.log('Share failed:', error));
+    } else {
+        alert("Sharing not supported on this browser.");
+    }
+}
+</script>
