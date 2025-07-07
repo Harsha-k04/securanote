@@ -55,7 +55,10 @@
         <div class="mt-2">
             <a href="https://wa.me/?text={{ share_link | urlencode }}" target="_blank" class="btn btn-success btn-sm">Share Link via WhatsApp</a>
             <a href="https://t.me/share/url?url={{ share_link | urlencode }}" target="_blank" class="btn btn-primary btn-sm">Share Link via Telegram</a>
-            <a href="mailto:?subject=Note&body={{ share_link | urlencode }}" class="btn btn-secondary btn-sm">Share Link via Email</a>
+            <a href="mailto:?subject=Note Link&body={{ share_link | urlencode }}" class="btn btn-dark">
+                Share Link via Email
+            </a>
+
         </div>
     </div>
 {% endif %}
@@ -69,7 +72,10 @@
         <div class="mt-2">
             <a href="https://api.whatsapp.com/send?text={{ qr_image_url }}" target="_blank" class="btn btn-success">Share via WhatsApp</a>
             <a href="https://t.me/share/url?url={{ qr_image_url }}" target="_blank" class="btn btn-info">Share via Telegram</a>
-            <a href="mailto:?subject=QR%20Code%20for%20Your%20Note&body={{ qr_image_url }}" class="btn btn-dark">Share via Email</a>
+            <a href="mailto:?subject=Note Link&body={{ share_link | urlencode }}" class="btn btn-dark">
+                  Share Link via Email
+            </a>
+
             <button onclick="shareQR()" class="btn btn-primary">Share with App</button>
         </div>
     </div>
