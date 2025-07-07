@@ -22,6 +22,7 @@ import random
 import smtplib
 from email.message import EmailMessage
 from securanote.utils import upload_file_to_s3, download_file_from_s3
+import qrcode
 
 # Load env
 load_dotenv()
@@ -225,6 +226,10 @@ def view_note(note_id):
 
     if not share_link and note.share_token:
         share_link = url_for("notes.shared_note", token=note.share_token, _external=True)
+         qr = qrcode.make(share_link)
+         buf = io.BytesIO()
+         qr.save(buf, format='PNG')
+         qr_code_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
 
     return render_template(
         "view_note.html",
@@ -232,7 +237,8 @@ def view_note(note_id):
         decrypted=decrypted,
         file_url=file_url,
         file_ext=file_ext,
-        share_link=share_link
+        share_link=share_link,
+         qr_code_base64=qr_code_base64
     )
 
 def send_otp_email(to_email, otp_code):
