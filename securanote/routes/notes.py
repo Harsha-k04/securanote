@@ -164,11 +164,22 @@ def view_note(note_id):
                 return render_template("enter_pin.html", note=note, attempts=session[attempt_key])
 
         elif "generate_link" in request.form:
-            view_once = request.form.get("view_once") == "on"
-            note.share_token = uuid.uuid4().hex
-            note.views_left = 1 if view_once else None  # One view if checkbox is selected, else unlimited
-            db.session.commit()
-            share_link = url_for("notes.shared_note", token=note.share_token, _external=True)
+              view_once = request.form.get("view_once") == "on"
+
+              # Generate a new token every time
+              note.share_token = uuid.uuid4().hex
+              note.views_left = 1 if view_once else None
+              db.session.commit()
+
+              # Generate link
+              share_link = url_for("notes.shared_note", token=note.share_token, _external=True)
+
+              # Generate QR from the link
+              qr = qrcode.make(share_link)
+              buf = io.BytesIO()
+              qr.save(buf, format='PNG')
+              qr_code_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+
 
 
     if request.method == "GET":
@@ -238,7 +249,7 @@ def view_note(note_id):
         file_url=file_url,
         file_ext=file_ext,
         share_link=share_link,
-         qr_code_base64=qr_code_base64
+        qr_code_base64=qr_code_base64
     )
 
 def send_otp_email(to_email, otp_code):
