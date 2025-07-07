@@ -410,11 +410,11 @@ def export_pdf():
 def shared_note(token):
     note = Note.query.filter_by(share_token=token).first_or_404()
 
-    # 1. Handle view limit
+    # 1. View limit check
     if note.views_left is not None and note.views_left <= 0:
         return "<h3>This note is no longer available (view limit reached).</h3>"
 
-    # 2. Decrypt content
+    # 2. Decrypt text content
     try:
         if note.encryption_type == 'AES':
             decrypted = fernet.decrypt(note.encrypted_content.encode()).decode()
@@ -425,31 +425,36 @@ def shared_note(token):
     except Exception as e:
         return f"<h3>Decryption error: {e}</h3>"
 
-    # 3. Decrypt file if present
+    # 3. File decryption (if present)
     file_url = None
     file_ext = None
     if note.file_path:
         file_ext = note.file_path.rsplit('.', 1)[-1].lower()
-        encrypted_data = download_file_from_s3(note.file_path)
-        if encrypted_data:
-            try:
-                if note.encryption_type == 'AES':
-                    decrypted_data = fernet.decrypt(encrypted_data)
-                elif note.encryption_type == 'ChaCha':
-                    decrypted_data = decrypt_chacha_bytes(encrypted_data)
+        temp_folder = os.path.join(current_app.root_path, 'static', 'temp')
+        os.makedirs(temp_folder, exist_ok=True)
+        decrypted_path = os.path.join(temp_folder, note.file_path)
 
-                temp_folder = os.path.join(current_app.root_path, 'static', 'temp')
-                os.makedirs(temp_folder, exist_ok=True)
-                decrypted_path = os.path.join(temp_folder, note.file_path)
+        # Skip re-decryption if already exists
+        if not os.path.exists(decrypted_path):
+            encrypted_data = download_file_from_s3(note.file_path)
+            if encrypted_data:
+                try:
+                    if note.encryption_type == 'AES':
+                        decrypted_data = fernet.decrypt(encrypted_data)
+                    elif note.encryption_type == 'ChaCha':
+                        decrypted_data = decrypt_chacha_bytes(encrypted_data)
+                    else:
+                        return "<h3>Unsupported file encryption.</h3>"
 
-                with open(decrypted_path, 'wb') as f:
-                    f.write(decrypted_data)
+                    with open(decrypted_path, 'wb') as f:
+                        f.write(decrypted_data)
 
-                file_url = url_for('static', filename=f'temp/{note.file_path}')
-            except Exception as e:
-                return f"<h3>File decryption error: {e}</h3>"
+                except Exception as e:
+                    return f"<h3>File decryption error: {e}</h3>"
 
-    # 4. Render note page
+        file_url = url_for('static', filename=f'temp/{note.file_path}')
+
+    # 4. Render note content
     rendered = render_template(
         "shared_note.html",
         note=note,
@@ -458,18 +463,18 @@ def shared_note(token):
         file_ext=file_ext
     )
 
-    # 5. Detect preview bots (WhatsApp, Telegram, Discord, Facebook)
+    # 5. Bot detection (to prevent view decrement on link preview)
     user_agent = request.headers.get("User-Agent", "").lower()
     preview_bots = ['discordbot', 'facebookexternalhit', 'whatsapp', 'telegrambot', 'twitterbot', 'slackbot']
-
     is_preview = any(bot in user_agent for bot in preview_bots)
 
-    # 6. Only decrement view count if it's NOT a bot
+    # 6. View decrement (only for real users)
     if not is_preview and note.views_left is not None:
         note.views_left -= 1
         db.session.commit()
 
     return rendered
+
 # Temporary media serving (non-saved decryption stream)
 @notes_bp.route("/temp_media/<key>/<filename>")
 def serve_temp_media(key, filename):
