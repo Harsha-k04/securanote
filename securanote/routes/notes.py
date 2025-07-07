@@ -176,9 +176,14 @@ def view_note(note_id):
 
               # Generate QR from the link
               qr = qrcode.make(share_link)
-              buf = io.BytesIO()
-              qr.save(buf, format='PNG')
-              qr_code_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+              filename = f"{note.id}_qr.png"
+              temp_folder = os.path.join(current_app.root_path, 'static', 'temp')
+              os.makedirs(temp_folder, exist_ok=True)
+              qr_path = os.path.join(temp_folder, filename)
+              qr.save(qr_path)
+
+              qr_image_url = url_for('static', filename=f'temp/{filename}', _external=True)
+
 
 
 
@@ -249,7 +254,8 @@ def view_note(note_id):
         file_url=file_url,
         file_ext=file_ext,
         share_link=share_link,
-        qr_code_base64=qr_code_base64
+        qr_code_base64=qr_code_base64,
+        qr_image_url=qr_image_url
     )
 
 def send_otp_email(to_email, otp_code):
