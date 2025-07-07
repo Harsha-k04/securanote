@@ -140,6 +140,7 @@ def view_note(note_id):
     file_ext = None
     decrypted = None
     share_link = None
+    qr_image_url = None
     decrypted_path = None  # Ensure it's defined before use
 
     attempt_key = f"attempts_note_{note_id}"
