@@ -226,10 +226,10 @@ def view_note(note_id):
 
     if not share_link and note.share_token:
         share_link = url_for("notes.shared_note", token=note.share_token, _external=True)
-         qr = qrcode.make(share_link)
-         buf = io.BytesIO()
-         qr.save(buf, format='PNG')
-         qr_code_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+        qr = qrcode.make(share_link)
+        buf = io.BytesIO()
+        qr.save(buf, format='PNG')
+        qr_code_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
 
     return render_template(
         "view_note.html",
