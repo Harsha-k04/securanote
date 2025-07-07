@@ -1,7 +1,6 @@
 <h2>{{ note.title }}</h2>
 <p>{{ decrypted }}</p>
 
-
 {% if note.file_path %}
   <h5>Attached File:</h5>
   {% set ext = note.file_path.rsplit('.', 1)[-1].lower() %}
@@ -11,7 +10,7 @@
   
   {% elif ext == 'mp3' %}
     <audio controls>
-      <source src="{{ file_url }}" width="300"  type="audio/mpeg">
+      <source src="{{ file_url }}" type="audio/mpeg">
       Your browser does not support the audio element.
     </audio>
 
@@ -26,6 +25,7 @@
   {% endif %}
 {% endif %}
 
+<hr>
 
 <form action="{{ url_for('notes.export_pdf') }}" method="POST">
     <input type="hidden" name="title" value="{{ note.title }}">
@@ -35,34 +35,34 @@
     {% endif %}
     <button type="submit" class="btn btn-primary">Download as PDF</button>
 </form>
-<h5>Generate Shareable Link</h5>
+
+<hr>
+
+<h3>🔗 Share this note</h3>
 <form method="POST">
-  <input type="hidden" name="generate_link" value="1">
+    <label>
+        <input type="checkbox" name="view_once" id="view_once">
+        View once
+    </label><br><br>
 
-  <div class="form-check mb-2">
-    <input class="form-check-input" type="checkbox" name="view_once" id="view_once">
-    <label class="form-check-label" for="view_once">
-      View Once Only
-    </label>
-  </div>
-
-  <button type="submit" class="btn btn-success">Generate Link</button>
+    <button type="submit" name="generate_link">Generate Link</button>
 </form>
 
 {% if share_link %}
-  <div class="mt-3">
-    <label><strong>Sharable Link:</strong></label>
-    <input type="text" class="form-control" value="{{ share_link }}" readonly onclick="this.select();">
-  </div>
-{% endif %}
-{% if qr_code_base64 %}
-  <div class="mt-3">
-    <label><strong>Scan QR Code:</strong></label><br>
-    <img src="data:image/png;base64,{{ qr_code_base64 }}" alt="QR Code" style="max-width: 200px;">
-  </div>
+    <div class="mt-3">
+        <p><strong>Shareable Link:</strong></p>
+        <input type="text" class="form-control" value="{{ share_link }}" readonly onclick="this.select();">
+    </div>
+
+    {% if qr_code_base64 %}
+        <div class="mt-3">
+            <p><strong>QR Code:</strong></p>
+            <img src="data:image/png;base64,{{ qr_code_base64 }}" alt="QR Code" style="max-width: 200px;">
+            <p>You can scan or share this QR via WhatsApp, Telegram, Email, etc.</p>
+        </div>
+    {% endif %}
 {% endif %}
 
+<hr>
 
 <p><a href="{{ url_for('notes.dashboard') }}">Back to Dashboard</a></p>
-
-
