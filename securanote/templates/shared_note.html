@@ -6,12 +6,20 @@
     <pre>{{ decrypted }}</pre>
 
     {% if file_url %}
-        {% if file_ext in ['jpg', 'jpeg', 'png'] %}
-            <img src="{{ file_url }}" style="max-width: 400px;">
+        {% if file_ext in ['jpg', 'jpeg', 'png', 'gif'] %}
+            <img src="{{ file_url }}" style="max-width: 400px;" loading="lazy">
         {% elif file_ext == 'mp3' %}
-            <audio controls src="{{ file_url }}"></audio>
-        {% elif file_ext == 'mp4' %}
-            <video controls src="{{ file_url }}" style="max-width: 400px;"></video>
+            <audio controls preload="none">
+                <source src="{{ file_url }}" type="audio/mpeg">
+                Your browser does not support the audio tag.
+            </audio>
+        {% elif file_ext in ['mp4', 'webm', 'ogg'] %}
+            <video controls preload="metadata" style="max-width: 640px;">
+                <source src="{{ file_url }}" type="video/{{ file_ext }}">
+                Your browser does not support the video tag.
+            </video>
+        {% else %}
+            <a href="{{ file_url }}" target="_blank">Download File</a>
         {% endif %}
     {% endif %}
 </body>
