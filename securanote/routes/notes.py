@@ -185,6 +185,9 @@ def view_note(note_id):
               qr.save(qr_path)
 
               qr_image_url = url_for('static', filename=f'temp/{filename}', _external=True)
+              buf = io.BytesIO()
+              qr.save(buf, format='PNG')
+              qr_code_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
 
 
 
