@@ -55,6 +55,12 @@
     <input type="text" class="form-control" value="{{ share_link }}" readonly onclick="this.select();">
   </div>
 {% endif %}
+{% if qr_code_base64 %}
+  <div class="mt-3">
+    <label><strong>Scan QR Code:</strong></label><br>
+    <img src="data:image/png;base64,{{ qr_code_base64 }}" alt="QR Code" style="max-width: 200px;">
+  </div>
+{% endif %}
 
 
 <p><a href="{{ url_for('notes.dashboard') }}">Back to Dashboard</a></p>
