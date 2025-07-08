@@ -68,7 +68,7 @@
   <img src="data:image/png;base64,{{ qr_code_base64 }}" alt="QR Code" style="max-width: 200px;">
 
   <div class="mt-3">
-    <a href="https://mail.google.com/mail/?view=cm&fs=1&to=&su=QR Code for Your Note&body=Scan the attached QR code or visit: {{ qr_image_url | urlencode }}" target="_blank">
+    <a href="https://mail.google.com/mail/?view=cm&fs=1&to=&su=QR%20Code%20for%20Your%20Note&body=Hi,%0A%0AHere%20is%20the%20QR%20code%20for%20accessing%20my%20note:%0A{{ qr_image_url | urlencode }}%0A%0AScan%20it%20to%20view%20the%20note.%0A" target="_blank">
       <button class="btn btn-dark">Share QR via Gmail</button>
     </a>
 
