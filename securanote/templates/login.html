@@ -30,7 +30,7 @@
     <p>{{ form.password.label }}<br>{{ form.password(size=30, id='password') }}</p>
 
     <label><input type="checkbox" onclick="togglePassword()"> Show Password</label><br><br>
-    <label>{{ form.remember() }}{{ form.remember.label }} Remember Me</label><br><br>
+    {{ form.remember() }}{{ form.remember.label }}<br><br>
 
     <button type="submit">Login</button>
 </form>
