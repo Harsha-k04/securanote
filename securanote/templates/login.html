@@ -4,7 +4,88 @@
     <meta charset="UTF-8">
     <title>Login</title>
     <style>
+        .message-error { color: red; }<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <style>
         .message-error { color: red; }
+        .message-success { color: green; }
+        .message-info { color: blue; }
+    </style>
+</head>
+<body>
+
+<h2>Login</h2>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <ul>
+      {% for category, message in messages %}
+        <li class="message-{{ category }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+
+<form method="POST" id="login-form" autocomplete="off">
+    {{ form.hidden_tag() }}
+
+    <p>{{ form.username.label }}<br>
+        <input type="text" name="username" id="username" size="30" value="{{ request.form.username or '' }}" autocomplete="off">
+    </p>
+
+    <p>{{ form.password.label }}<br>
+        <input type="password" name="password" id="password" size="30" autocomplete="off">
+    </p>
+
+    <label><input type="checkbox" onclick="togglePassword()"> Show Password</label><br><br>
+
+    <label>
+        <input type="checkbox" id="remember-checkbox" name="remember">
+        Remember Me
+    </label><br><br>
+
+    <button type="submit">Login</button>
+</form>
+
+<p>
+    <a href="{{ url_for('auth.forgot_password') }}">Forgot Password?</a><br>
+    <a href="{{ url_for('auth.register') }}">Don't have an account? Register</a>
+</p>
+
+<script>
+    function togglePassword() {
+        const pwdField = document.getElementById("password");
+        pwdField.type = pwdField.type === "password" ? "text" : "password";
+    }
+
+    const rememberCheckbox = document.getElementById('remember-checkbox');
+    const loginForm = document.getElementById('login-form');
+
+    loginForm.addEventListener('submit', function () {
+        if (rememberCheckbox.checked) {
+            document.getElementById('username').setAttribute('autocomplete', 'on');
+            document.getElementById('password').setAttribute('autocomplete', 'on');
+        } else {
+            document.getElementById('username').setAttribute('autocomplete', 'off');
+            document.getElementById('password').setAttribute('autocomplete', 'off');
+        }
+    });
+
+    // Optional: clear values on load if remember not checked
+    window.addEventListener('load', function () {
+        if (!rememberCheckbox.checked) {
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+    });
+</script>
+
+</body>
+</html>
+
         .message-success { color: green; }
         .message-info { color: blue; }
     </style>
