@@ -66,9 +66,13 @@ def login():
         elif not check_password_hash(user.password_hash, form.password.data):
             flash('Incorrect password', 'error')
         else:
+            remember = form.remember.data  # 🧠 This captures checkbox state
+            print(f"[DEBUG] Remember Me selected: {remember}") 
             login_user(user, remember=form.remember.data)
             flash('Login successful', 'success')
-            return redirect(url_for('notes.dashboard'))
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('notes.dashboard'))
+            
 
     return render_template('login.html', form=form)
 
