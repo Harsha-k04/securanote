@@ -23,14 +23,18 @@
   {% endif %}
 {% endwith %}
 
-<form method="POST">
+<form method="POST" id="login-form" autocomplete="off">
     {{ form.hidden_tag() }}
 
     <p>{{ form.username.label }}<br>{{ form.username(size=30) }}</p>
     <p>{{ form.password.label }}<br>{{ form.password(size=30, id='password') }}</p>
 
     <label><input type="checkbox" onclick="togglePassword()"> Show Password</label><br><br>
-    {{ form.remember() }}{{ form.remember.label }}<br><br>
+
+    <label>
+        {{ form.remember(id='remember-checkbox') }}
+        {{ form.remember.label }}
+    </label><br><br>
 
     <button type="submit">Login</button>
 </form>
@@ -45,6 +49,26 @@
         const pwdField = document.getElementById("password");
         pwdField.type = pwdField.type === "password" ? "text" : "password";
     }
+
+    const rememberCheckbox = document.getElementById('remember-checkbox');
+    const loginForm = document.getElementById('login-form');
+
+    rememberCheckbox.addEventListener('change', function () {
+        if (this.checked) {
+            loginForm.setAttribute('autocomplete', 'on');
+        } else {
+            loginForm.setAttribute('autocomplete', 'off');
+        }
+    });
+
+    // Optional: clear prefilled values if "remember me" not checked
+    window.addEventListener('load', function () {
+        if (!rememberCheckbox.checked) {
+            document.getElementById('password').value = '';
+            const usernameField = document.querySelector('input[name="username"]');
+            if (usernameField) usernameField.value = '';
+        }
+    });
 </script>
 
 </body>
