@@ -14,6 +14,9 @@ class User(db.Model, UserMixin):
     is_verified = db.Column(db.Boolean, default=False)
     password_hash = db.Column(db.String(256), nullable=False)
     notes = db.relationship('Note', backref='owner', lazy=True)
+    last_ip = db.Column(db.String(45))
+    last_login_time = db.Column(db.DateTime)
+
 
     def __repr__(self):
         return f"<User {self.username}>"
