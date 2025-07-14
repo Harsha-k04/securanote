@@ -272,7 +272,7 @@ def send_otp_email(to_email, otp_code):
 
     with smtplib.SMTP("smtp.gmail.com", 587) as server:
         server.starttls()
-        server.login("securanote@gmail.com", "mjnk wgzh skrb bmsx")
+        server.login("securanote@gmail.com", "nyyq xzom ptoy fgjv")
         server.send_message(msg)
 # ------------------------ View Encrypted File ------------------------
 @notes_bp.route('/view_file/<filename>')
