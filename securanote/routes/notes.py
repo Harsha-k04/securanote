@@ -327,7 +327,9 @@ def verify_email_for_reset(note_id):
         db.session.commit()  # ✅ Ensure this line is present
 
         print("Sending OTP:", otp_code)
-        send_otp_email(current_user.email, otp_code)
+        from securanote import send_otp
+        send_otp(current_user.email, otp_code)
+
 
         return redirect(url_for("notes.verify_otp", note_id=note.id))
 
