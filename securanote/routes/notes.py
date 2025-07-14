@@ -267,12 +267,12 @@ def send_otp_email(to_email, otp_code):
     msg = EmailMessage()
     msg.set_content(f"Your Securanote OTP code is: {otp_code}")
     msg["Subject"] = "Securanote OTP Verification"
-    msg["From"] = "harsha332004@gmail.com"
+    msg["From"] = "securanote@gmail.com"
     msg["To"] = to_email
 
     with smtplib.SMTP("smtp.gmail.com", 587) as server:
         server.starttls()
-        server.login("harsha332004@gmail.com", "mjnk wgzh skrb bmsx")
+        server.login("securanote@gmail.com", "mjnk wgzh skrb bmsx")
         server.send_message(msg)
 # ------------------------ View Encrypted File ------------------------
 @notes_bp.route('/view_file/<filename>')
