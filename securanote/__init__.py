@@ -30,7 +30,7 @@ def create_app():
     app.config['MAIL_PORT'] = 587
     app.config['MAIL_USE_TLS'] = True
     app.config['MAIL_USERNAME'] = 'securanote@gmail.com' # your email
-    app.config['MAIL_PASSWORD'] = 'mjnk wgzh skrb bmsx'  # app password
+    app.config['MAIL_PASSWORD'] = 'nyyq xzom ptoy fgjv'  # app password
     app.config['MAIL_DEFAULT_SENDER'] = 'securanote@gmail.com'
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=7)
     app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
