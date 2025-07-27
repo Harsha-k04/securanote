@@ -1,190 +1,380 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Welcome to Securanote</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>SecuraNote – Next‑Gen Security</title>
   <style>
+    /* Reset + base */
+    *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+    body { font-family: 'Segoe UI', sans-serif; line-height:1.6; color:#333; overflow-x:hidden; }
+    a { text-decoration:none; color:inherit; }
+    button { cursor:pointer; }
+
+    /* Nav */
+    nav { position:fixed; top:0; width:100%; background:rgba(255,255,255,.95); backdrop-filter:blur(10px); z-index:1000; padding:1rem 2rem; transition:0.3s; }
+    nav.scrolled { background:rgba(255,255,255,.98); box-shadow:0 2px 20px rgba(0,0,0,0.1); }
+    .nav-container { display:flex; justify-content:space-between; align-items:center; max-width:1200px; margin:auto; }
+    .logo { display:flex; align-items:center; gap:.5rem; font-size:1.8rem; font-weight:bold; color:#333; }
+    .lock-icon { width:40px;height:40px;background:#ff6b35;border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-size:1.2rem; }
+    .nav-links { display:flex;gap:2rem;list-style:none; }
+    .nav-links a { position:relative;font-weight:500;color:#333;transition:color .3s;}
+    .nav-links a:hover { color:#ff6b35; }
+    .nav-links a::after { content:'';position:absolute;width:0;height:2px;bottom:-5px;left:0;background:#ff6b35;transition:width .3s; }
+    .nav-links a:hover::after { width:100%; }
+    .btn-login { background:transparent;color:#333;border:none;padding:.5rem 1rem;border-radius:5px;font-weight:500;transition:.3s; }
+    .btn-login:hover { background:#f0f0f0; }
+    .btn-primary { background:#ff6b35;color:white;border:none;padding:.75rem 1.5rem;border-radius:5px;font-weight:bold;transition:.3s; }
+    .btn-primary:hover { background:#e55a2b;transform:translateY(-2px);box-shadow:0 5px 15px rgba(255,107,53,0.4); }
+    .nav-buttons a {
+  padding: 0.6rem 1.2rem;
+  border-radius: 5px;
+  font-weight: 600;
+  transition: 0.3s ease;
+  margin-left: 1rem;
+  display: inline-block;
+}
+
+.nav-buttons a:first-child {
+  border: 2px solid #ff6b35;
+  color: #ff6b35;
+  background: transparent;
+}
+
+.nav-buttons a:first-child:hover {
+  background: #ff6b35;
+  color: white;
+}
+
+.nav-buttons a:last-child {
+  background: #ff6b35;
+  color: white;
+  border: none;
+  box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+}
+
+.nav-buttons a:last-child:hover {
+  background: #e55a2b;
+  transform: translateY(-2px);
+}
+
+    /* Hero */
+    .hero { background:linear-gradient(135deg,#f8f9fa,#e9ecef); min-height:100vh; display:flex;align-items:center;padding:2rem; position:relative; overflow:hidden; }
+    .hero::before { content:''; position:absolute; background:url(data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='20' cy='20' r='2' fill='%23ff6b35' opacity='.1'/><circle cx='80' cy='30' r='1' fill='%23ff6b35' opacity='.2'/><circle cx='40' cy='70' r='1.5' fill='%23ff6b35' opacity='.15'/></svg>) repeat; width:100%;height:100%;animation:floatBg 20s ease-in-out infinite; }
+    @keyframes floatBg { 0%,100%{transform:translateY(0)}50%{transform:translateY(-20px);} }
+    .hero-container { display:grid; grid-template-columns:1fr 1fr; gap:4rem; max-width:1200px;margin:auto;align-items:center;position:relative;z-index:1;}
+    .hero-content { opacity:0;transform:translateX(-50px);animation:slideInLeft 1s ease-out .5s forwards; }
+    .hero-title { font-size:3.5rem;font-weight:bold;line-height:1.2;margin-bottom:1.5rem;background:linear-gradient(135deg,#333,#ff6b35);-webkit-background-clip:text;-webkit-text-fill-color:transparent; }
+    ..security-highlight {
+      background: linear-gradient(90deg, #e76f51, #2a9d8f);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+       position: relative;
+    }
+
+     .hero {
+          position: relative;
+          background-image: radial-gradient(#000 1px, transparent 0);
+          background-size: 20px 20px;
+          background-color: #fff;
+         z-index: 1;
+     }
+
+
+
+
+    .security-highlight::after { content:'';position:absolute;bottom:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,#28a745,#20c997);animation:glow 2s ease-in-out infinite alternate; }
+    @keyframes glow { from { box-shadow:0 0 5px #28a745;} to { box-shadow:0 0 20px #28a745;} }
+    .hero-subtitle { font-size:1.2rem;color:#6c757d;margin-bottom:2rem; }
+    .hero-buttons { display:flex;gap:1rem;margin-bottom:2rem; }
+    .btn-secondary { background:transparent;color:#ff6b35;border:2px solid #ff6b35;padding:.75rem 1.5rem;border-radius:5px;font-weight:bold;transition:.3s; }
+    .btn-secondary:hover { background:#ff6b35;color:white;transform:translateY(-2px);box-shadow:0 5px 15px rgba(255,107,53,0.4); }
+    .hero-visual { opacity:0;transform:translateX(50px);animation:slideInRight 1s ease-out .7s forwards; }
+    @keyframes slideInLeft { from {opacity:0;transform:translateX(-50px);} to {opacity:1;transform:translateX(0);} }
+    @keyframes slideInRight { from {opacity:0;transform:translateX(50px);} to {opacity:1;transform:translateX(0);} }
+
+    .security-box { background:white;border-radius:15px;padding:2rem;box-shadow:0 20px 40px rgba(0,0,0,0.1);transform:perspective(1000px) rotateY(-10deg);transition:.3s; }
+    .security-box:hover { transform:perspective(1000px) rotateY(0) translateY(-10px);box-shadow:0 30px 60px rgba(0,0,0,0.15); }
+    .security-box h3 { display:flex;align-items:center;gap:1rem;margin-bottom:1rem;font-size:1.3rem; }
+    .shield-icon { width:50px;height:50px;background:#ff6b35;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:1.5rem; }
+    .pin-input { background:#f8f9fa;border:1px solid #e9ecef;border-radius:8px;padding:1rem;margin-top:1rem;font-family:monospace;text-align:center;font-size:1.1rem; }
+
+    /* Sections */
+    section { padding:5rem 2rem; }
+    .features { background:linear-gradient(135deg,#4a90e2,#357abd);color:white;text-align:center;}
+    .features-title { font-size:2.5rem;margin-bottom:3rem; }
+    .features-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:2rem;margin-top:3rem;}
+    .feature-card { background:rgba(255,255,255,.1);backdrop-filter:blur(10px);border-radius:15px;padding:2rem;text-align:left;transition:.3s;opacity:0;transform:translateY(30px);animation:fadeInUp 1s ease-out forwards; }
+    .feature-card:nth-child(1){animation-delay:.2s;} .feature-card:nth-child(2){animation-delay:.4s;} .feature-card:nth-child(3){animation-delay:.6s;}
+    .feature-card:hover{transform:translateY(-10px);box-shadow:0 20px 40px rgba(0,0,0,0.2);}
+    .feature-icon { width:60px;height:60px;background:#ff6b35;border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-size:1.8rem;margin-bottom:1rem;}
+    .feature-card h3{font-size:1.3rem;margin-bottom:1rem;}
+
+    .data-types { background:#f8f9fa;text-align:center; }
+    .data-types-title{font-size:2.5rem;color:#333;margin-bottom:1rem;}
+    .data-types-subtitle{color:#6c757d;font-size:1.2rem;margin-bottom:3rem;}
+    .data-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:2rem;margin-top:3rem;}
+    .data-card{background:white;border-radius:15px;padding:2rem;box-shadow:0 10px 30px rgba(0,0,0,0.1);transition:.3s;opacity:0;transform:scale(.9);animation:scaleIn .8s ease-out forwards;}
+    .data-card:nth-child(1){animation-delay:.2s;} .data-card:nth-child(2){animation-delay:.4s;} .data-card:nth-child(3){animation-delay:.6s;}
+    .data-card:hover{transform:translateY(-10px) scale(1.02);box-shadow:0 20px 40px rgba(0,0,0,0.15);}
+    .data-icon{width:60px;height:60px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-size:1.8rem;margin:0 auto 1rem;}
+    .notes-icon{background:#ff6b35;} .images-icon{background:#28a745;} .videos-icon{background:#ff6b35;}
+    .encrypt-btn{width:100%;padding:.75rem;border:none;border-radius:8px;font-weight:bold;transition:.3s;text-transform:uppercase;letter-spacing:.5px;}
+    .encrypt-notes{background:#ff6b35;color:white;} .encrypt-images{background:#28a745;color:white;} .encrypt-videos{background:#ff6b35;color:white;}
+    .encrypt-btn:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,0,0,0.2);}
+
+    .how-it-works { background:white;text-align:center;}
+    .how-container { max-width:1200px;margin:auto; }
+    .how-title{font-size:2.5rem;margin-bottom:1rem;color:#333;}
+    .how-subtitle{font-size:1.2rem;color:#6c757d;margin-bottom:3rem;}
+    .process-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:2rem;margin-top:3rem;}
+    .process-step{background:#f8f9fa;border-radius:15px;padding:2rem;position:relative;transition:.3s;opacity:0;transform:translateY(30px);animation:fadeInUp 1s ease-out forwards;}
+    .process-step:nth-child(1){animation-delay:.2s;} .process-step:nth-child(2){animation-delay:.4s;} .process-step:nth-child(3){animation-delay:.6s;} .process-step:nth-child(4){animation-delay:.8s;}
+    .process-step:hover{background:#e9ecef;transform:translateY(-5px);}
+    .step-number{position:absolute;top:-15px;left:50%;transform:translateX(-50%);width:40px;height:40px;background:#ff6b35;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:1.2rem;}
+
+    .security-features { background:linear-gradient(135deg,#2c3e50,#34495e);color:white;}
+    .security-container{max-width:1200px;margin:auto;}
+    .security-title{font-size:2.5rem;margin-bottom:2rem;text-align:left;}
+    .security-subtitle{font-size:1.2rem;opacity:.9;margin-bottom:3rem;}
+    .security-grid{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;}
+    .security-list{list-style:none;}
+    .security-item{display:flex;align-items:center;gap:1rem;margin-bottom:2rem;opacity:0;transform:translateX(-30px);animation:slideInLeft 1s ease-out forwards;}
+    .security-item:nth-child(1){animation-delay:.2s;} .security-item:nth-child(2){animation-delay:.4s;} .security-item:nth-child(3){animation-delay:.6s;}
+    .security-item-icon{width:40px;height:40px;background:#ff6b35;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;}
+    @keyframes fadeInUp{ from{opacity:0;transform:translateY(30px);} to{opacity:1;transform:translateY(0);} }
+    @keyframes scaleIn{ from{opacity:0;transform:scale(.9);} to{opacity:1;transform:scale(1);} }
+
+    .security-visual{display:flex;justify-content:center;align-items:center;position:relative;}
+    .solar-system{position:relative;width:400px;height:400px;margin:auto;animation:systemRotate 20s linear infinite;}
+    .sun{position:absolute;top:50%;left:50%;width:80px;height:80px;background:#2c3e50;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 30px rgba(255,107,53,0.5);z-index:10;}
+    .lock-center{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#ff6b35;}
+    .orbit{position:absolute;top:50%;left:50%;border:2px solid rgba(255,107,53,0.3);border-radius:50%;transform:translate(-50%,-50%);}
+    .orbit-1{width:120px;height:120px;animation:orbit 8s linear infinite;} .orbit-2{width:160px;height:160px;animation:orbit 12s linear infinite reverse;} .orbit-3{width:220px;height:220px;animation:orbit 16s linear infinite;} .orbit-4{width:280px;height:280px;animation:orbit 20s linear infinite reverse;}
+    .planet{position:absolute;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 0 15px rgba(255,107,53,0.6);top:-15px;left:calc(50% - 15px);}
+    .planet-1{background:rgba(255,107,53,0.9);} .planet-2{background:rgba(40,167,69,0.9);} .planet-3{background:rgba(74,144,226,0.9);} .planet-4{background:rgba(255,193,7,0.9);}
+    .security-dot{width:8px;height:8px;background:#ff6b35;border-radius:50%;opacity:.6;position:absolute;animation:floatBg 3s ease-in-out infinite;}
+    .dot-1{top:20%;left:15%;animation-delay:0;} .dot-2{top:30%;right:20%;animation-delay:.5s;} .dot-3{bottom:25%;left:25%;animation-delay:1s;} .dot-4{bottom:35%;right:15%;animation-delay:1.5s;} .dot-5{top:60%;left:5%;animation-delay:2s;}
+    @keyframes systemRotate{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+    @keyframes orbit{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+
+    .testimonial { background:linear-gradient(135deg,#4a90e2,#357abd);color:white;text-align:center;padding:5rem 2rem;}
+    .testimonial-text{font-size:1.5rem;font-style:italic;margin-bottom:2rem;opacity:0;transform:translateY(30px);animation:fadeInUp 1s ease-out .5s forwards;}
+    .testimonial-author{opacity:0;transform:translateY(30px);animation:fadeInUp 1s ease-out .7s forwards;}
+    .author-avatar{width:60px;height:60px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:auto 0 1rem;}
+    .author-name{font-weight:bold;font-size:1.2rem;margin-bottom:.5rem;}
+
+    .cta{background:#f8f9fa;text-align:center;padding:5rem 2rem;}
+    .cta-title{font-size:2.5rem;color:#333;margin-bottom:1rem;}
+    .cta-subtitle{font-size:1.2rem;color:#6c757d;margin-bottom:3rem;}
+    .cta-buttons a{padding:1rem 2rem;border-radius:5px;font-weight:bold;transition:.3s;}
+    .btn-primary.cta{background:#ff6b35;color:white;margin-right:1rem;}
+    .btn-view-plans{background:#28a745;color:white;}
+    .btn-primary.cta:hover{background:#e55a2b;}
+    .btn-view-plans:hover{background:#218838;}
+
+    footer{background:#2c3e50;color:white;padding:3rem 2rem;}
+    .footer-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:2rem;max-width:1200px;margin:auto;}
+    .footer-section h3{color:#ff6b35;margin-bottom:1rem;}
+    .footer-section ul{list-style:none;}
+    .footer-section a{color:#bdc3c7;transition:.3s;}
+    .footer-section a:hover{color:#ff6b35;}
+    .footer-bottom{text-align:center;margin-top:2rem;padding-top:2rem;border-top:1px solid #34495e;color:#bdc3c7;}
     html {
-      scroll-behavior: smooth;
-    }
+     scroll-behavior: smooth;
+     }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      cursor: url('https://cdn-icons-png.flaticon.com/512/892/892692.png') 16 16, auto;
-    }
+    <!-- In <head> -->
+    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
 
-    body, html {
-      height: 100%;
-      font-family: 'Poppins', sans-serif;
-      color: #fff;
-      background: url("/static/background.jpg") no-repeat center center fixed;
-      background-size: cover;
-      animation: floatBG 40s ease-in-out infinite alternate;
-    }
 
-    @keyframes floatBG {
-      0% { background-position: center top; }
-      100% { background-position: center bottom; }
-    }
-
-    nav {
-      width: 100%;
-      padding: 20px 40px;
-      background: rgba(0, 0, 0, 0.7);
-      position: fixed;
-      top: 0;
-      left: 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 1000;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    }
-
-    nav .logo {
-      font-size: 1.6em;
-      font-weight: 700;
-      color: #ff7e5f;
-    }
-
-    nav ul {
-      list-style: none;
-      display: flex;
-      gap: 30px;
-    }
-
-    nav ul li a {
-      color: #fff;
-      text-decoration: none;
-      font-weight: 600;
-      transition: color 0.3s ease;
-    }
-
-    nav ul li a:hover {
-      color: #ffb36b;
-    }
-
-    .container {
-      margin-top: 120px;
-      background: rgba(0, 0, 0, 0.6);
-      padding: 40px 30px;
-      border-radius: 25px;
-      text-align: center;
-      max-width: 800px;
-      width: 90%;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 0 35px rgba(0,0,0,0.5);
-      margin-left: auto;
-      margin-right: auto;
-      animation: fadeInUp 2s ease forwards;
-    }
-
-    @keyframes fadeInUp {
-      0% {opacity: 0; transform: translateY(40px);}
-      100% {opacity: 1; transform: translateY(0);}
-    }
-
-    h1 {
-      font-size: 3em;
-      margin-bottom: 25px;
-      color: #ffffff;
-      text-shadow: 1px 1px 5px rgba(0,0,0,0.7);
-    }
-
-    p {
-      font-size: 1.2em;
-      line-height: 1.8;
-      margin-bottom: 35px;
-    }
-
-    .buttons {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 25px;
-    }
-
-    .buttons a {
-      text-decoration: none;
-      color: white;
-      background: linear-gradient(135deg, #ff7e5f, #feb47b);
-      padding: 14px 32px;
-      border-radius: 50px;
-      font-size: 1.1em;
-      font-weight: 600;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.4);
-      transition: transform 0.35s ease, box-shadow 0.35s ease;
-    }
-
-    .buttons a:hover {
-      transform: translateY(-8px) scale(1.07);
-      box-shadow: 0 15px 35px rgba(0,0,0,0.6);
-    }
-
-    section {
-      max-width: 900px;
-      margin: 60px auto;
-      padding: 40px;
-      background: rgba(0, 0, 0, 0.65);
-      border-radius: 25px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 0 30px rgba(0,0,0,0.5);
-      text-align: center;
-    }
-
-    footer {
-      margin-top: 60px;
-      font-size: 0.9em;
-      text-align: center;
-      opacity: 0.75;
-    }
   </style>
 </head>
 <body>
-  <nav>
-    <div class="logo">Securanote</div>
-    <ul>
-      <li><a href="/">Home</a></li>
-      <li><a href="/login">Login</a></li>
-      <li><a href="/register">Register</a></li>
-      <li><a href="#contact">Contact</a></li>
-      <li><a href="#help">Help</a></li>
-    </ul>
+  <!-- Navbar -->
+  <nav id="navbar">
+    <div class="nav-container">
+      <a href="#" class="logo"><div class="lock-icon">🔒</div>SECURANOTE</a>
+      <ul class="nav-links">
+        <li><a href="#features">FEATURES</a></li>
+        <li><a href="#security">SECURITY</a></li>
+        <li><a href="#about">ABOUT</a></li>
+      </ul>
+      <div class="nav-buttons">
+        <a href="{{ url_for('auth.login') }}">Login</a>
+      <a href="{{ url_for('auth.register') }}">Get Started</a>
+
+      </div>
+    </div>
   </nav>
 
-  <div class="container">
-    <h1>Welcome to Securanote</h1>
-    <p>
-      <strong>Securanote</strong> is your encrypted digital vault for notes and files. It uses advanced cryptographic techniques such as <strong>AES</strong> and <strong>ChaCha20</strong> to secure your content.
-    </p>
-    <p>
-      Your data is safely stored in <strong>AWS S3</strong>. Share notes through secure, view-once links or dynamic QR codes, giving you full control over who sees what and when.
-    </p>
-
-    <div class="buttons">
-      <a href="/login">Login</a>
-      <a href="/register">Register</a>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-content">
+        <div class="hero-content">
+    <!-- Left side: Text -->
+     <div class="hero-text" data-aos="fade-up">
+        <h1 class="hero-title">
+           NEXT-GEN <span class="security-highlight">SECURITY</span> FOR YOUR DIGITAL ASSETS
+        </h1>
+     </div>
+        
+          
+          </section>
+        <p class="hero-subtitle">
+          Military-grade encryption for your notes, images, and videos with four-pin authentication and secure S3 storage.
+        </p>
+        <div class="hero-buttons">
+          <a href="#" class="btn-primary">START ENCRYPTING</a>
+          <a href="#features" class="btn-secondary">LEARN MORE</a>
+        </div>
+      </div>
+      <div class="security-box">
+          <h3><div class="shield-icon">🛡️</div>SECURE ACCESS</h3>
+          <p>Enter your 4‑pin authentication code to access your encrypted data.</p>
+          <input type="text" class="pin-input" placeholder="● ● ● ●" readonly>
+        </div>
+      </div>
     </div>
   </div>
-
-  <section id="contact">
-    <h2>Contact Us</h2>
-    <p>If you have questions, issues, or feedback, reach out to us at:</p>
-    <p><strong>Email:</strong> support@securanote.com</p>
-    <p><strong>Phone:</strong> +91-98765-43210</p>
   </section>
 
-  <section id="help">
-    <h2>Help & Support</h2>
-    <p>Need help using Securanote? Visit our documentation or reach out to our support team.</p>
-    <p>We’re here to help you encrypt, store, and share your data securely!</p>
+  <!-- Features -->
+  <section id="features" data-aos="fade-right">
+    <div class="features-container">
+      <h2 class="features-title">ADVANCED SECURITY FEATURES</h2>
+      <p>Protect your sensitive information with our comprehensive security solutions.</p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🔐</div><h3>END-TO-END ENCRYPTION</h3>
+          <p>Your data is encrypted before it leaves your device and can only be decrypted with your unique keys.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">✅</div><h3>FOUR-PIN AUTHENTICATION</h3>
+          <p>An additional layer of security with a four‑pin authentication system to access your encrypted data.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🗄️</div><h3>S3 SECURE STORAGE</h3>
+          <p>Your encrypted data is stored in Amazon S3 with additional security measures to ensure maximum protection.</p>
+        </div>
+      </div>
+    </div>
   </section>
 
+  <!-- Data Types -->
+  <section class="data-types">
+    <div class="data-types-container">
+      <h2 class="data-types-title">SECURE ALL YOUR DATA TYPES</h2>
+      <p class="data-types-subtitle">One platform to encrypt and secure all your sensitive information.</p>
+      <div class="data-grid">
+        <div class="data-card">
+          <div class="data-icon notes-icon">📄</div><h3>ENCRYPTED NOTES</h3>
+          <p>Securely store your sensitive text notes with our advanced encryption technology.</p>
+          <button class="encrypt-btn encrypt-notes">ENCRYPT NOTES</button>
+        </div>
+        <div class="data-card">
+          <div class="data-icon images-icon">🖼️</div><h3>ENCRYPTED IMAGES</h3>
+          <p>Keep your private photos and images safe with end-to-end encryption.</p>
+          <button class="encrypt-btn encrypt-images">ENCRYPT IMAGES</button>
+        </div>
+        <div class="data-card">
+          <div class="data-icon videos-icon">🎥</div><h3>ENCRYPTED VIDEOS</h3>
+          <p>Protect your confidential videos with our secure encryption technology.</p>
+          <button class="encrypt-btn encrypt-videos">ENCRYPT VIDEOS</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="how-it-works">
+    <div class="how-container">
+      <h2 class="how-title">HOW SECURANOTE WORKS</h2>
+      <p class="how-subtitle">Simple, secure, and straightforward process to protect your data.</p>
+      <div class="process-grid">
+        <div class="process-step"><div class="step-number">1</div><h3>UPLOAD</h3><p>Upload your notes, images, or videos to the SecuraNote platform.</p></div>
+        <div class="process-step"><div class="step-number">2</div><h3>ENCRYPT</h3><p>Your data is encrypted with military-grade encryption algorithms.</p></div>
+        <div class="process-step"><div class="step-number">3</div><h3>STORE</h3><p>Encrypted data is securely stored in Amazon S3 storage.</p></div>
+        <div class="process-step"><div class="step-number">4</div><h3>ACCESS</h3><p>Access your data anytime with your four-pin authentication.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Security Animation -->
+  <section class="security-features" id="security">
+    <div class="security-container">
+      <h2 class="security-title">SECURITY THAT NEVER SLEEPS</h2>
+      <p class="security-subtitle">Our advanced security protocols work around the clock to ensure your data remains protected at all times.</p>
+      <div class="security-grid">
+        <div>
+          <ul class="security-list">
+            <li class="security-item"><div class="security-item-icon">⚡</div><div><h4>REAL-TIME THREAT MONITORING</h4><p>Our systems continuously monitor for potential security threats and vulnerabilities.</p></div></li>
+            <li class="security-item"><div class="security-item-icon">🔄</div><div><h4>AUTOMATIC SECURITY UPDATES</h4><p>We implement the latest security patches and updates automatically to keep your data safe.</p></div></li>
+            <li class="security-item"><div class="security-item-icon">💾</div><div><h4>REDUNDANT BACKUP SYSTEMS</h4><p>Multiple backup systems ensure your encrypted data is never lost or compromised.</p></div></li>
+          </ul>
+        </div>
+        <div class="security-visual">
+          <div class="solar-system">
+            <div class="sun"><div class="lock-center">🔒</div></div>
+            <div class="orbit orbit-1"><div class="planet planet-1">🛡️</div></div>
+            <div class="orbit orbit-2"><div class="planet planet-2">🔐</div></div>
+            <div class="orbit orbit-3"><div class="planet planet-3">🔑</div></div>
+            <div class="orbit orbit-4"><div class="planet planet-4">⚡</div></div>
+            <div class="security-dot dot-1"></div>
+            <div class="security-dot dot-2"></div>
+            <div class="security-dot dot-3"></div>
+            <div class="security-dot dot-4"></div>
+            <div class="security-dot dot-5"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonial -->
+  <section class="testimonial">
+    <div class="testimonial-container">
+      <blockquote class="testimonial-text">"SecuraNote has completely transformed how we handle sensitive client information. The four‑pin authentication gives us peace of mind that our data is secure."</blockquote>
+      <div class="testimonial-author">
+        <div class="author-avatar">👤</div>
+        <div class="author-name">SARAH JOHNSON</div>
+        <div class="author-title">CTO, TECHSECURE INC.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <h2 class="cta-title">READY TO SECURE YOUR DATA?</h2>
+    <p class="cta-subtitle">Join thousands of users who trust SecuraNote for their data encryption needs.</p>
+    <div class="cta-buttons">
+      <a href="#" class="btn-primary cta">GET STARTED NOW</a>
+      <a href="#pricing" class="btn-view-plans">VIEW PLANS</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
   <footer>
-    &copy; 2025 Securanote. All rights reserved.
+    <div class="footer-container">
+      <div class="footer-section"><div class="lock-icon">🔒</div><h3>SECURANOTE</h3><p>Secure your data with military‑grade encryption technology.</p></div>
+      <div class="footer-section"><h3>QUICK LINKS</h3><ul><li><a href="#features">HOME</a></li><li><a href="#features">FEATURES</a></li><li><a href="#security">SECURITY</a></li><li><a href="#pricing">PRICING</a></li></ul></div>
+      <div class="footer-section"><h3>RESOURCES</h3><ul><li><a href="#">DOCUMENTATION</a></li><li><a href="#">API</a></li><li><a href="#">SUPPORT</a></li><li><a href="#">BLOG</a></li></ul></div>
+      <div class="footer-section"><h3>CONTACT</h3><ul><li><a href="mailto:info@securanote.com">INFO@SECURANOTE.COM</a></li><li>+1 (555) 123‑4567</li><li>123 SECURITY AVE, CRYPTOVILLE</li></ul></div>
+    </div>
+    <div class="footer-bottom">&copy; 2025 SecuraNote. All rights reserved.</div>
   </footer>
+
+ </script>
+    // Navbar scroll effect
+    window.addEventListener('scroll', () => {
+      document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+    });
+  </script>
+  <!-- Before closing </body> tag -->
+<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+<script>
+  AOS.init();
+</script>
+
 </body>
 </html>
