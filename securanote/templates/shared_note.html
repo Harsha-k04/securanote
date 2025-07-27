@@ -1,26 +1,55 @@
 <!DOCTYPE html>
-<html>
-<head><title>{{ note.title }}</title></head>
-<body>
-    <h2>{{ note.title }}</h2>
-    <pre>{{ decrypted }}</pre>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ note.title }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-900 to-blue-600 min-h-screen flex items-center justify-center p-6">
+    <div class="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-xl max-w-2xl w-full fade-in">
 
-    {% if file_url %}
-        {% if file_ext in ['jpg', 'jpeg', 'png', 'gif'] %}
-            <img src="{{ file_url }}" style="max-width: 400px;" loading="lazy">
-        {% elif file_ext == 'mp3' %}
-            <audio controls preload="none">
-                <source src="{{ file_url }}" type="audio/mpeg">
-                Your browser does not support the audio tag.
-            </audio>
-        {% elif file_ext in ['mp4', 'webm', 'ogg'] %}
-            <video controls preload="metadata" style="max-width: 640px;">
-                <source src="{{ file_url }}" type="video/{{ file_ext }}">
-                Your browser does not support the video tag.
-            </video>
-        {% else %}
-            <a href="{{ file_url }}" target="_blank">Download File</a>
+        <!-- Note Title -->
+        <h2 class="text-2xl md:text-3xl font-bold text-blue-800 border-b border-blue-200 pb-2 mb-4">{{ note.title }}</h2>
+
+        <!-- Note Content -->
+        <pre class="whitespace-pre-wrap text-gray-800 text-sm leading-relaxed bg-blue-50 p-4 rounded-md border border-blue-100">{{ decrypted }}</pre>
+
+        <!-- File Attachment -->
+        {% if file_url %}
+            <div class="mt-6 space-y-2">
+                {% if file_ext in ['jpg', 'jpeg', 'png', 'gif'] %}
+                    <img src="{{ file_url }}" style="max-width: 400px;" loading="lazy"
+                         class="rounded-lg shadow max-w-full border border-gray-200">
+                {% elif file_ext == 'mp3' %}
+                    <audio controls preload="none" class="w-full mt-2">
+                        <source src="{{ file_url }}" type="audio/mpeg">
+                        Your browser does not support the audio tag.
+                    </audio>
+                {% elif file_ext in ['mp4', 'webm', 'ogg'] %}
+                    <video controls preload="metadata" style="max-width: 640px;"
+                           class="w-full rounded-lg shadow mt-2">
+                        <source src="{{ file_url }}" type="video/{{ file_ext }}">
+                        Your browser does not support the video tag.
+                    </video>
+                {% else %}
+                    <a href="{{ file_url }}" target="_blank"
+                       class="inline-block text-blue-600 hover:text-blue-800 underline mt-2">
+                        Download File
+                    </a>
+                {% endif %}
+            </div>
         {% endif %}
-    {% endif %}
+
+    </div>
 </body>
 </html>
