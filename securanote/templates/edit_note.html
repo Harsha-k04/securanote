@@ -1,86 +1,101 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>Edit Note</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-        }
-
-        input, textarea, select {
-            width: 100%;
-            margin-bottom: 10px;
-            padding: 8px;
-        }
-
-        label {
-            font-weight: bold;
-        }
-
-        #pin-field {
-            margin-top: 10px;
-        }
-
-        button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #45a049;
-        }
-
-        a {
-            display: inline-block;
-            margin-top: 20px;
-            text-decoration: none;
-            color: #007BFF;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Note - SecuraNote</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #1a237e, #283593);
+      min-height: 100vh;
+    }
+    .note-container {
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      border-radius: 16px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #3949ab, #5c6bc0);
+      transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #303f9f, #3f51b5);
+      transform: translateY(-2px);
+    }
+    .btn-secondary {
+      background: linear-gradient(135deg, #78909c, #90a4ae);
+      transition: all 0.3s ease;
+    }
+    .btn-secondary:hover {
+      background: linear-gradient(135deg, #607d8b, #78909c);
+      transform: translateY(-2px);
+    }
+    .encryption-option.selected {
+      border-color: #3949ab;
+      background-color: rgba(57, 73, 171, 0.1);
+    }
+  </style>
 </head>
-<body>
-    <h2>Edit Note</h2>
-
+<body class="p-4 md:p-6 font-sans text-gray-800">
+  <div class="max-w-3xl mx-auto note-container p-6 md:p-8">
     <form method="POST">
-        <label>Title:</label>
-        <input name="title" value="{{ note.title }}" required>
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold text-indigo-900">Edit Note</h1>
+        <a href="{{ url_for('notes.dashboard') }}" class="btn-secondary px-4 py-2 rounded-lg text-white font-medium flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Dashboard
+        </a>
+      </div>
 
-        <label>Content:</label>
-        <textarea name="content" required>{{ decrypted }}</textarea>
-
-        <label>Encryption Type:</label>
-        <select name="encryption_type" required>
-            <option value="AES" {% if note.encryption_type == 'AES' %}selected{% endif %}>AES</option>
-            <option value="ChaCha" {% if note.encryption_type == 'ChaCha' %}selected{% endif %}>ChaCha</option>
-        </select>
-
-        <label>
-            <input type="checkbox" id="change-pin-toggle" onchange="togglePin()"> Change PIN
-        </label>
-
-        <div id="pin-field" style="display: none;">
-            <label>New 4-digit PIN:</label>
-            <input type="password" name="pin" minlength="4" maxlength="6">
+      <div class="space-y-6">
+        <div>
+          <label for="noteTitle" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+          <input type="text" id="noteTitle" name="title" value="{{ note.title }}" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
         </div>
 
-        <button type="submit">Save Changes</button>
+        <div>
+          <label for="noteContent" class="block text-sm font-medium text-gray-700 mb-1">Content</label>
+          <textarea id="noteContent" name="content" rows="8" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">{{ decrypted }}</textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-3">Encryption Method</label>
+          <select name="encryption_type" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            <option value="AES" {% if note.encryption_type == 'AES' %}selected{% endif %}>AES-256</option>
+            <option value="ChaCha" {% if note.encryption_type == 'ChaCha' %}selected{% endif %}>ChaCha20</option>
+          </select>
+        </div>
+
+        <!-- Change PIN Toggle -->
+        <div class="border-t pt-6">
+          <label class="flex items-center text-indigo-700 font-medium cursor-pointer">
+            <input type="checkbox" id="changePinToggle" class="mr-2">
+            Change Security PIN
+          </label>
+
+          <div id="pinField" class="mt-4 hidden">
+            <label for="newPin" class="block text-sm font-medium text-gray-700 mb-1">New 4-digit PIN</label>
+            <input type="password" name="pin" id="newPin" minlength="4" maxlength="6" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter new PIN">
+          </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="pt-4">
+          <button type="submit" class="btn-primary px-6 py-3 rounded-lg text-white font-medium w-full md:w-auto">Save Note</button>
+        </div>
+      </div>
     </form>
+  </div>
 
-    <a href="{{ url_for('notes.dashboard') }}">← Back to Dashboard</a>
-
-    <script>
-        function togglePin() {
-            const pinField = document.getElementById("pin-field");
-            pinField.style.display = pinField.style.display === "none" ? "block" : "none";
-        }
-    </script>
+  <script>
+    // Show/hide PIN field
+    document.getElementById("changePinToggle").addEventListener("change", function() {
+      const pinField = document.getElementById("pinField");
+      pinField.classList.toggle("hidden", !this.checked);
+    });
+  </script>
 </body>
 </html>
