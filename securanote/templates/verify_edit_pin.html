@@ -5,54 +5,126 @@
     <title>Verify PIN to Edit Note</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1d3b78, #1a2d59);
+            color: #1f1f1f;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
         }
-        input, button {
-            padding: 8px;
-            width: 250px;
-            margin-bottom: 10px;
+
+        .container {
+            background: #f7f9fc;
+            padding: 40px 30px;
+            border-radius: 12px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 320px;
         }
-        p.message {
-            color: red;
+
+        .container h2 {
+            margin-top: 15px;
+            font-size: 20px;
+            color: #1a1a1a;
         }
+
+        .container p {
+            color: #555;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        input[type="password"] {
+            padding: 12px;
+            font-size: 16px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        button {
+            padding: 12px;
+            font-size: 16px;
+            width: 100%;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #1e4ed8;
+        }
+
+        .show-pin {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #333;
+        }
+
         .message-error {
             color: red;
+            font-size: 14px;
+            margin-bottom: 10px;
         }
+
         .message-info {
             color: blue;
+            font-size: 14px;
+            margin-bottom: 10px;
         }
+
+        .back-link {
+            margin-top: 20px;
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .lock-icon {
+            font-size: 32px;
+            color: #2563eb;
+        }
+
     </style>
 </head>
 <body>
 
-<h2>Enter PIN to Edit Note</h2>
+    <a href="{{ url_for('notes.dashboard') }}" class="back-link">← Back to Dashboard</a>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% for category, message in messages %}
-        <p class="message-{{ category }}">{{ message }}</p>
-    {% endfor %}
-{% endwith %}
+    <div class="container">
+        <div class="lock-icon">🔒</div>
+        <h2>Create PIN to Edit Note</h2>
+        <p>Please enter your secure PIN to edit this note</p>
 
-<form method="POST">
-    <label>PIN:</label><br>
-    <input type="password" name="pin" id="pin" minlength="4" maxlength="6" required>
-    <input type="checkbox" onclick="togglePin()"> Show PIN<br><br>
-    <button type="submit">Verify</button>
-</form>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <p class="message-{{ category }}">{{ message }}</p>
+            {% endfor %}
+        {% endwith %}
 
-<p><a href="{{ url_for('notes.dashboard') }}">← Back to Dashboard</a></p>
+        <form method="POST">
+            <input type="password" name="pin" id="pin" placeholder="Enter 4-digit PIN" minlength="4" maxlength="6" required>
+            <div class="show-pin">
+                <input type="checkbox" onclick="togglePin()"> Show PIN
+            </div>
+            <button type="submit">Verify PIN</button>
+        </form>
+    </div>
 
-<script>
-function togglePin() {
-    var x = document.getElementById("pin");
-    if (x.type === "password") {
-        x.type = "text";
-    } else {
-        x.type = "password";
-    }
-}
-</script>
+    <script>
+        function togglePin() {
+            var x = document.getElementById("pin");
+            x.type = x.type === "password" ? "text" : "password";
+        }
+    </script>
 
 </body>
 </html>
