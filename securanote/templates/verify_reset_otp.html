@@ -1,23 +1,174 @@
-<form method="POST">
-    <p>Enter OTP:<br><input type="text" name="otp" required></p>
-    <input type="submit" value="Verify OTP">
-</form>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SecuraNote - Verify OTP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .verify-card {
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.6s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .btn-primary {
+      transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+    .otp-input {
+      width: 3rem;
+      height: 3rem;
+      font-size: 1.5rem;
+      text-align: center;
+      border-radius: 0.5rem;
+      border: 1px solid #d1d5db;
+      transition: all 0.2s;
+    }
+    .otp-input:focus {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
+      outline: none;
+    }
+    @media (max-width: 640px) {
+      .otp-input {
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 1.25rem;
+      }
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center p-4">
+  <div class="verify-card bg-white rounded-xl p-8 w-full max-w-md">
+    <div class="text-center mb-8">
+      <div class="flex justify-center mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-800">Verify Your Identity</h1>
+      <p class="text-gray-600 mt-2">Enter the 6-digit code sent to your email</p>
+      <p class="text-indigo-600 font-medium mt-1" id="userEmail">user@example.com</p>
+    </div>
 
-<form method="POST" action="{{ url_for('auth.resend_reset_otp') }}">
-    <button type="submit" id="resendBtn" disabled>Resend OTP (10s)</button>
-</form>
+    <form method="POST" action="{{ url_for('auth.verify_reset_otp') }}" id="otpForm">
+      <p class="mb-2">Enter OTP:</p>
+      <div class="flex justify-between mb-6">
+        {% for i in range(6) %}
+        <input type="text" name="otp_digit" class="otp-input" maxlength="1" pattern="\d*" required>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="otp" id="otpHidden">
+
+      <button type="submit" id="verifyButton" class="btn-primary w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+        Verify Code
+      </button>
+
+      <div class="text-center mt-6 space-y-3">
+        <p class="text-sm text-gray-600">Didn't receive the code?</p>
+
+        <!-- Resend OTP Button (JS triggers form submission) -->
+        <button type="button" id="resendButton" class="text-indigo-600 font-medium hover:underline focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+          Resend Code (<span id="resendTimer">30</span>s)
+        </button>
+
+        <!-- Hidden form for resending OTP -->
+        <form method="POST" action="{{ url_for('auth.resend_reset_otp') }}" id="resendForm" class="hidden"></form>
+
+        <div class="pt-2">
+          <a href="{{ url_for('auth.login') }}" class="text-gray-600 text-sm hover:underline focus:outline-none">
+            Back to Login
+          </a>
+        </div>
+      </div>
+    </form>
+
+    <!-- Notification -->
+    <div id="notification" class="fixed top-4 right-4 bg-white rounded-lg shadow-lg p-4 transform translate-x-full transition-transform duration-300 max-w-xs">
+      <div class="flex items-center">
+        <svg id="notificationIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"></svg>
+        <p id="notificationText" class="text-gray-700"></p>
+      </div>
+    </div>
+  </div>
 
 <script>
-    let countdown = 10;
-    const btn = document.getElementById('resendBtn');
-    const interval = setInterval(() => {
-        if (countdown > 0) {
-            btn.innerText = `Resend OTP (${countdown}s)`;
-            countdown--;
-        } else {
-            btn.innerText = "Resend OTP";
-            btn.disabled = false;
-            clearInterval(interval);
-        }
-    }, 1000);
+  const otpInputs = document.querySelectorAll('.otp-input');
+  const otpForm = document.getElementById('otpForm');
+  const otpHidden = document.getElementById('otpHidden');
+  const resendButton = document.getElementById('resendButton');
+  const resendForm = document.getElementById('resendForm');
+  const resendTimerSpan = document.getElementById('resendTimer');
+  const notification = document.getElementById('notification');
+  const notificationText = document.getElementById('notificationText');
+  const notificationIcon = document.getElementById('notificationIcon');
+
+  // Input focus and paste logic
+  otpInputs.forEach((input, idx) => {
+    input.addEventListener('input', () => {
+      input.value = input.value.replace(/\D/g, '');
+      if (input.value && idx < otpInputs.length - 1) otpInputs[idx + 1].focus();
+    });
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !input.value && idx > 0) {
+        otpInputs[idx - 1].focus();
+      }
+    });
+
+    input.addEventListener('paste', e => {
+      e.preventDefault();
+      const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+      paste.split('').forEach((char, i) => {
+        if (otpInputs[i]) otpInputs[i].value = char;
+      });
+    });
+  });
+
+  // Submit OTP form with combined value
+  otpForm.addEventListener('submit', () => {
+    const otpValue = Array.from(otpInputs).map(input => input.value).join('');
+    otpHidden.value = otpValue;
+  });
+
+  // Resend OTP logic
+  resendButton.addEventListener('click', () => {
+    resendForm.submit();
+  });
+
+  let countdown = 30;
+  const interval = setInterval(() => {
+    if (countdown > 0) {
+      resendTimerSpan.innerText = countdown;
+      countdown--;
+    } else {
+      resendButton.innerText = 'Resend Code';
+      resendButton.disabled = false;
+      clearInterval(interval);
+    }
+  }, 1000);
+
+  // Notification function
+  function showNotification(message, type = 'success') {
+    notificationText.textContent = message;
+    notificationIcon.innerHTML = type === 'success'
+      ? `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />`
+      : `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />`;
+    notificationIcon.className = `h-6 w-6 mr-2 ${type === 'success' ? 'text-green-500' : 'text-red-500'}`;
+    notification.classList.remove('translate-x-full');
+    setTimeout(() => notification.classList.add('translate-x-full'), 3000);
+  }
 </script>
+</body>
+</html>
