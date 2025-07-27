@@ -1,117 +1,145 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>Vault Dashboard</title>
-    <style>
-        .flash-message {
-            padding: 10px;
-            margin-bottom: 10px;
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-            border-radius: 5px;
-            animation: fadeOut 1s ease-in-out 3s forwards;
-        }
-
-        @keyframes fadeOut {
-            to {
-                opacity: 0;
-                height: 0;
-                padding: 0;
-                margin: 0;
-                overflow: hidden;
-            }
-        }
-
-        .note-actions {
-            margin-top: 5px;
-        }
-
-        .note-actions form {
-            display: inline;
-            margin-right: 5px;
-        }
-
-        .note-preview {
-            margin-top: 10px;
-        }
-
-        .note-preview img {
-            max-width: 200px;
-            border: 1px solid #ccc;
-            margin-top: 5px;
-        }
-
-        .note-preview audio {
-            display: block;
-            margin-top: 5px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vault Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    .flash-message {
+      padding: 10px;
+      margin-bottom: 10px;
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      border-radius: 5px;
+      animation: fadeOut 1s ease-in-out 3s forwards;
+    }
+    @keyframes fadeOut {
+      to { opacity: 0; height: 0; padding: 0; margin: 0; overflow: hidden; }
+    }
+  </style>
 </head>
-<body>
+<body class="bg-gray-100 font-sans">
+<div class="flex h-screen">
+  <!-- Sidebar -->
+  <div class="w-64 bg-blue-900 text-white flex flex-col">
+    <div class="px-6 py-4 text-2xl font-bold border-b border-blue-700">
+      <img src="https://img.icons8.com/ios-filled/50/ffffff/lock--v1.png" class="inline-block w-6 mr-2" /> SecuraNote
+    </div>
+    <nav class="flex-1 px-4 py-6 space-y-2">
+      <a href="#" class="block px-4 py-2 rounded bg-blue-700">Dashboard</a>
+      <a href="#" class="block px-4 py-2 rounded hover:bg-blue-800">All Notes</a>
+      <a href="#" class="block px-4 py-2 rounded hover:bg-blue-800">Downloads</a>
+      <a href="#" class="block px-4 py-2 rounded hover:bg-blue-800">Settings</a>
+    </nav>
+    <div class="p-4 border-t border-blue-700">
+      <p class="text-sm">{{ user.username }}</p>
+      <p class="text-xs text-blue-300">Premium User</p>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="flex-1 p-6 overflow-y-auto">
+    <!-- Top Header -->
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-xl font-semibold">Hi {{ user.username }}</h2>
+      <div class="flex items-center space-x-4">
+        <input type="text" id="searchInput" onkeyup="searchNotes()" placeholder="Search notes..." class="px-3 py-2 border rounded w-64" />
+        <button onclick="toggleNoteForm()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">+ New Note</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-3 gap-4 mb-6">
+      <div class="bg-white shadow rounded p-4">
+        <div class="text-sm text-gray-500">Total Notes</div>
+        <div class="text-2xl font-bold">{{ notes|length }}</div>
+      </div>
+      <div class="bg-white shadow rounded p-4">
+        <div class="text-sm text-gray-500">Downloads</div>
+        <div class="text-2xl font-bold">5</div> <!-- Update dynamically if needed -->
+      </div>
+      <div class="bg-white shadow rounded p-4">
+        <div class="text-sm text-gray-500">Encrypted Notes</div>
+        <div class="text-2xl font-bold">{{ notes|selectattr('encryption_type')|list|length }}</div>
+      </div>
+    </div>
+
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-            {% if category == 'success' %}
-                <div class="flash-message">{{ message }}</div>
-            {% endif %}
-        {% endfor %}
+      {% for category, message in messages %}
+        {% if category == 'success' %}
+          <div class="flash-message">{{ message }}</div>
+        {% endif %}
+      {% endfor %}
     {% endwith %}
 
-    <h2>Welcome, {{ user.username }}!</h2>
+    <!-- Add Note Form -->
+    <div id="note-form" class="bg-white shadow rounded-lg p-6 mb-6 hidden">
+      <h3 class="text-lg font-semibold mb-4">Create New Secure Note</h3>
+      <form method="POST" enctype="multipart/form-data" class="space-y-4">
+        <input name="title" placeholder="Enter note title" required class="w-full px-4 py-2 border rounded" />
+        <textarea name="content" placeholder="Write your secure note here..." required class="w-full h-32 px-4 py-2 border rounded"></textarea>
+        <input type="file" name="file" accept="image/*,audio/*" class="block" />
+        <select name="encryption_type" required class="w-full px-4 py-2 border rounded">
+          <option value="AES">AES</option>
+          <option value="ChaCha">ChaCha</option>
+        </select>
+        <input type="password" name="pin" required minlength="4" maxlength="6" placeholder="Enter a 4-digit PIN" class="w-full px-4 py-2 border rounded" />
+        <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">Save</button>
+      </form>
+    </div>
 
-    <h3>Add a Note</h3>
-    <form method="POST" enctype="multipart/form-data">
-        <input name="title" placeholder="Note Title" required><br>
-        <textarea name="content" placeholder="Note content" required></textarea><br>
-        <input type="file" name="file" accept="image/*,audio/*"><br>
-        <select name="encryption_type" required>
-            <option value="AES">AES</option>
-            <option value="ChaCha">ChaCha</option>
-        </select><br>
-        <label for="pin">Enter a 4-digit PIN to secure this note:</label><br>
-        <input type="password" name="pin" required minlength="4" maxlength="6"><br>
-        <button type="submit">Save</button>
-    </form>
-
-    <h3>Your Notes</h3>
-    {% for note in notes %}
-        <div style="border: 1px solid #ccc; padding: 10px; margin: 5px;">
-            <strong>{{ note.title }}</strong><br>
-            <small>Created: {{ note.timestamp|localtime }}</small><br><br>
-            <small>Encrypted with: {{ note.encryption_type }}</small><br>
-
-
-
-            <div class="note-preview">
-                {% if note.file_path %}
-                    {% set file_url = url_for('static', filename='uploads/' ~ note.file_path) %}
-                    
-                   
-                    
-                   
-                {% endif %}
-            </div>
-
-            <div class="note-actions">
-                <!-- View button -->
-                <form action="{{ url_for('notes.view_note', note_id=note.id) }}" method="GET">
-                    <button type="submit">View</button>
-                </form>
-
-                <!-- Delete button -->
-                <form action="{{ url_for('notes.delete_note', note_id=note.id) }}" method="POST">
-                    <button type="submit" onclick="return confirm('Delete this note?')">Delete</button>
-                </form>
-                <form action="{{ url_for('notes.edit_note', note_id=note.id) }}" method="GET" style="display:inline;">
-                    <button type="submit">Edit</button>
-                </form>
-            </div>
+    <!-- Notes -->
+    <div id="notesList">
+      {% for note in notes|reverse %}
+        <div class="bg-white p-4 shadow rounded-lg mb-4 note-card">
+          <strong class="note-title text-lg">{{ note.title }}</strong>
+          <p class="text-sm text-gray-500">Created: {{ note.timestamp|localtime }}</p>
+          <p class="text-sm text-gray-500">Encrypted with: {{ note.encryption_type }}</p>
+          {% if note.file_path %}
+            {% set file_url = url_for('static', filename='uploads/' ~ note.file_path) %}
+            {% if note.file_path.endswith('.jpg') or note.file_path.endswith('.png') %}
+              <img src="{{ file_url }}" class="w-48 mt-2 border" />
+            {% elif note.file_path.endswith('.mp3') or note.file_path.endswith('.wav') %}
+              <audio controls class="mt-2"><source src="{{ file_url }}"></audio>
+            {% endif %}
+          {% endif %}
+          <div class="flex space-x-2 mt-2">
+            <form action="{{ url_for('notes.view_note', note_id=note.id) }}" method="GET">
+              <button class="bg-blue-500 text-white px-3 py-1 rounded">View</button>
+            </form>
+            <form action="{{ url_for('notes.delete_note', note_id=note.id) }}" method="POST">
+              <button onclick="return confirm('Delete this note?')" class="bg-red-500 text-white px-3 py-1 rounded">Delete</button>
+            </form>
+            <form action="{{ url_for('notes.verify_edit_pin', note_id=note.id) }}" method="GET">
+              <button class="bg-yellow-500 text-white px-3 py-1 rounded">Edit</button>
+            </form>
+          </div>
         </div>
-    {% else %}
+      {% else %}
         <p>No notes yet.</p>
-    {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
 
-    <p><a href="{{ url_for('auth.logout') }}">Logout</a></p>
+<script>
+  function toggleNoteForm() {
+    const form = document.getElementById('note-form');
+    form.classList.toggle('hidden');
+    form.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function searchNotes() {
+    const input = document.getElementById('searchInput').value.toLowerCase();
+    const notes = document.querySelectorAll('.note-card');
+    notes.forEach(note => {
+      const title = note.querySelector('.note-title').textContent.toLowerCase();
+      note.style.display = title.includes(input) ? 'block' : 'none';
+    });
+  }
+</script>
 </body>
 </html>
