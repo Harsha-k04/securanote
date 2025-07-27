@@ -1,3 +1,4 @@
+from flask import render_template
 from securanote import create_app
 from flask import redirect, send_file, current_app
 from securanote.utils import decrypt_video_file
