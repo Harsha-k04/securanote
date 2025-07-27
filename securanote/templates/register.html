@@ -1,70 +1,213 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Register</title>
-    <style>
-        .valid { color: green; }
-        .invalid { color: red; }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Register</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Space Grotesk', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      background: #fff;
+      padding: 1.8rem;
+      border-radius: 14px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 0.3rem;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      font-size: 13px;
+      margin-bottom: 1.4rem;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 13px;
+      width: 100%;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      font-size: 12px;
+      margin-top: -0.4rem;
+      gap: 0.4rem;
+    }
+
+    #password-requirements {
+      font-size: 12px;
+      margin-top: -0.2rem;
+      margin-bottom: 0.4rem;
+    }
+
+    #password-requirements ul {
+      list-style-type: none;
+      padding-left: 1rem;
+      margin: 0.2rem 0 0;
+    }
+
+    #password-requirements li::before {
+      content: "• ";
+    }
+
+    .valid {
+      color: #22c55e;
+    }
+
+    .invalid {
+      color: #ef4444;
+    }
+
+    .submit-button {
+      background-color: #4f46e5;
+      color: white;
+      border: none;
+      padding: 10px;
+      width: 100%;
+      font-size: 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .submit-button:hover {
+      background-color: #4338ca;
+    }
+
+    .footer-link {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 13px;
+    }
+
+    .footer-link a {
+      color: #4f46e5;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .footer-link a:hover {
+      text-decoration: underline;
+    }
+
+    .note {
+      text-align: center;
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 0.6rem;
+    }
+  </style>
 </head>
 <body>
-    <h2>Register</h2>
-    <form method="POST">
-        {{ form.hidden_tag() }}
-        <p>
-            {{ form.username.label }}<br>
-            {{ form.username(size=32) }}
-        </p>
-        <p>
-            {{ form.email.label }}<br>
-            {{ form.email(size=32) }}
-        </p>
-        <p>
-            {{ form.password.label }}<br>
-            {{ form.password(size=32, id='password', type='password') }}
-            <br>
-            <input type="checkbox" id="show-password"> Show Password
-        </p>
+  <div class="card">
+    <h2>Create Your Account</h2>
+    <p class="subtitle">Join our community and get started today</p>
 
-        <div id="password-requirements">
-            <p>Password must include:</p>
-            <ul>
-                <li id="length" class="invalid">At least 8 characters</li>
-                <li id="uppercase" class="invalid">An uppercase letter</li>
-                <li id="lowercase" class="invalid">A lowercase letter</li>
-                <li id="number" class="invalid">A number</li>
-                <li id="special" class="invalid">A special character (!@#$%^&* etc.)</li>
-            </ul>
-        </div>
+    <form method="POST" autocomplete="off">
+      {{ form.hidden_tag() }}
 
-        <p>{{ form.submit() }}</p> 
+      <div class="form-group">
+        {{ form.username.label }}
+        {{ form.username(size=32) }}
+      </div>
+
+      <div class="form-group">
+        {{ form.email.label }}
+        {{ form.email(size=32) }}
+      </div>
+
+      <div class="form-group">
+        {{ form.password.label }}
+        {{ form.password(size=32, id='password', type='password') }}
+      </div>
+
+      <div class="checkbox-group">
+        <input type="checkbox" id="show-password">
+        <label for="show-password">Show Password</label>
+      </div>
+
+      <div id="password-requirements">
+        <p style="margin: 0 0 0.2rem;">Password must include:</p>
+        <ul>
+          <li id="length" class="invalid">At least 8 characters</li>
+          <li id="uppercase" class="invalid">An uppercase letter</li>
+          <li id="lowercase" class="invalid">A lowercase letter</li>
+          <li id="number" class="invalid">A number</li>
+          <li id="special" class="invalid">A special character (!@#$%^&* etc.)</li>
+        </ul>
+      </div>
+
+      {{ form.submit(class_="submit-button") }}
     </form>
-    <p>Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a></p>
 
-    <script>
-        const passwordInput = document.getElementById('password');
-        const showPassword = document.getElementById('show-password');
-        const length = document.getElementById('length');
-        const uppercase = document.getElementById('uppercase');
-        const lowercase = document.getElementById('lowercase');
-        const number = document.getElementById('number');
-        const special = document.getElementById('special');
+    <div class="footer-link">
+      Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a>
+    </div>
 
-        // Toggle password visibility
-        showPassword.addEventListener('change', function () {
-            passwordInput.type = this.checked ? 'text' : 'password';
-        });
+    <div class="note">This is a demo registration page</div>
+  </div>
 
-        // Live password validation
-        passwordInput.addEventListener('input', function () {
-            const value = passwordInput.value;
+  <script>
+    const passwordInput = document.getElementById('password');
+    const showPassword = document.getElementById('show-password');
+    const length = document.getElementById('length');
+    const uppercase = document.getElementById('uppercase');
+    const lowercase = document.getElementById('lowercase');
+    const number = document.getElementById('number');
+    const special = document.getElementById('special');
 
-            length.className = value.length >= 8 ? 'valid' : 'invalid';
-            uppercase.className = /[A-Z]/.test(value) ? 'valid' : 'invalid';
-            lowercase.className = /[a-z]/.test(value) ? 'valid' : 'invalid';
-            number.className = /[0-9]/.test(value) ? 'valid' : 'invalid';
-            special.className = /[\W_]/.test(value) ? 'valid' : 'invalid';
-        });
-    </script>
+    showPassword.addEventListener('change', function () {
+      passwordInput.type = this.checked ? 'text' : 'password';
+    });
+
+    passwordInput.addEventListener('input', function () {
+      const value = passwordInput.value;
+      length.className = value.length >= 8 ? 'valid' : 'invalid';
+      uppercase.className = /[A-Z]/.test(value) ? 'valid' : 'invalid';
+      lowercase.className = /[a-z]/.test(value) ? 'valid' : 'invalid';
+      number.className = /[0-9]/.test(value) ? 'valid' : 'invalid';
+      special.className = /[\W_]/.test(value) ? 'valid' : 'invalid';
+    });
+  </script>
 </body>
 </html>
