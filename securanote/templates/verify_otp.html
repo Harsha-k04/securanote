@@ -1,28 +1,207 @@
-<form method="POST">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Verify OTP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-    <p>Enter OTP:</p>
-    <input type="text" name="otp" required>
-    <p><input type="submit" value="Verify OTP"></p>
-</form>
+    body {
+      margin: 0;
+      font-family: 'Space Grotesk', sans-serif;
+      background: linear-gradient(to right, #7569f1, #8a6cf1);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-<!-- Resend OTP form -->
-<form method="POST" action="{{ url_for('auth.resend_otp') }}">
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 3rem 2rem;
+      max-width: 430px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+      animation: fadeIn 0.4s ease-in-out;
+    }
 
-    <button id="resend-btn" type="submit" disabled>Resend OTP (wait...)</button>
-</form>
+    .container .icon {
+      font-size: 2.8rem;
+      color: #5a4bff;
+      margin-bottom: 1rem;
+    }
 
-<script>
+    .container h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #222;
+    }
+
+    .container p {
+      font-size: 0.95rem;
+      color: #555;
+    }
+
+    .container p strong {
+      color: #5a4bff;
+      display: block;
+      margin-top: 2px;
+    }
+
+    form {
+      margin-top: 2rem;
+    }
+
+    .otp-box {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 1.8rem;
+    }
+
+    .otp-box input[type="text"] {
+      width: 48px;
+      height: 56px;
+      font-size: 1.5rem;
+      text-align: center;
+      border: 2px solid #d9d9d9;
+      border-radius: 12px;
+      transition: border 0.3s ease;
+    }
+
+    .otp-box input:focus {
+      border-color: #5a4bff;
+      outline: none;
+      box-shadow: 0 0 4px #a2a2ff;
+    }
+
+    .verify-btn {
+      background-color: #5a4bff;
+      color: white;
+      padding: 14px;
+      width: 100%;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .verify-btn:hover {
+      background-color: #473ad9;
+    }
+
+    .resend {
+      margin-top: 1.5rem;
+      font-size: 0.93rem;
+      color: #555;
+    }
+
+    .resend button {
+      background: none;
+      border: none;
+      color: #5a4bff;
+      font-weight: 500;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    .resend button:disabled {
+      color: #aaa;
+      cursor: not-allowed;
+    }
+
+    .timer {
+      margin-top: 8px;
+      font-size: 0.8rem;
+      color: #666;
+    }
+
+    @keyframes fadeIn {
+      0% {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">✔️</div>
+    <h2>Verify Your Email</h2>
+    <p>We've sent a verification code to<br>
+      <strong>{{ email }}</strong>
+    </p>
+
+    <!-- OTP Form -->
+    <form method="POST" onsubmit="return combineOTP()">
+      <label for="otp" style="font-weight: 500; margin-bottom: 8px; display: block; color: #333;">Enter verification code</label>
+      <div class="otp-box">
+        {% for i in range(6) %}
+          <input type="text" name="otp_digit" maxlength="1" required oninput="moveNext(this, {{ i }})" id="otp{{ i }}" pattern="\d*" />
+        {% endfor %}
+      </div>
+      <input type="hidden" name="otp" id="otp-full" />
+      <input type="submit" value="Verify OTP" class="verify-btn" />
+    </form>
+
+    <!-- Resend OTP -->
+    <form method="POST" action="{{ url_for('auth.resend_otp') }}">
+      <div class="resend">
+        Didn't receive the code?
+        <button type="submit" id="resend-btn" disabled>Resend OTP</button>
+        <div class="timer">Resend available in <span id="countdown">00:10</span></div>
+      </div>
+    </form>
+  </div>
+
+  <script>
     const resendBtn = document.getElementById('resend-btn');
+    const countdownDisplay = document.getElementById('countdown');
     let countdown = 10;
 
     const interval = setInterval(() => {
-        if (countdown > 0) {
-            resendBtn.textContent = `Resend OTP (${countdown}s)`;
-            countdown--;
-        } else {
-            clearInterval(interval);
-            resendBtn.disabled = false;
-            resendBtn.textContent = "Resend OTP";
-        }
+      if (countdown > 0) {
+        countdownDisplay.textContent = `00:${countdown < 10 ? '0' : ''}${countdown}`;
+        countdown--;
+      } else {
+        clearInterval(interval);
+        resendBtn.disabled = false;
+        countdownDisplay.textContent = '';
+      }
     }, 1000);
-</script>
+
+    function moveNext(input, index) {
+      const next = document.getElementById(`otp${index + 1}`);
+      if (input.value.length === 1 && next) {
+        next.focus();
+      }
+      if (input.value === "" && index > 0) {
+        document.getElementById(`otp${index - 1}`).focus();
+      }
+    }
+
+    function combineOTP() {
+      let otp = '';
+      for (let i = 0; i < 6; i++) {
+        const digit = document.getElementById(`otp${i}`).value;
+        if (!digit) return false;
+        otp += digit;
+      }
+      document.getElementById('otp-full').value = otp;
+      return true;
+    }
+  </script>
+</body>
+</html>
