@@ -1,80 +1,392 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Login</title>
-    <style>
-        .message-error { color: red; }
-        .message-success { color: green; }
-        .message-info { color: blue; }
-    </style>
+  <meta charset="UTF-8">
+  <title>Login | SecuraNote</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #7f5af0, #5f4dee);
+      cursor: none;
+      transition: background 0.3s ease;
+    }
+
+    body.dark {
+      background: linear-gradient(135deg, #1e1e2f, #12121b);
+    }
+
+    .custom-cursor {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      position: fixed;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+      transition: transform 0.1s ease;
+    }
+
+    .theme-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 18px;
+      background: white;
+      border: none;
+      padding: 8px 10px;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 4px;
+      background-color: #ff9800;
+      width: 0;
+      z-index: 9999;
+      transition: width 1.5s ease-in-out;
+    }
+
+    .container {
+      background-color: white;
+      width: 100%;
+      max-width: 300px;
+      padding: 30px 20px;
+      border-radius: 16px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+      text-align: center;
+      animation: fadeInUp 0.8s ease-out;
+    }
+
+    body.dark .container {
+      background-color: #2b2b38;
+      color: white;
+    }
+
+    h2 {
+      margin-bottom: 8px;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    p {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 20px;
+    }
+
+    body.dark p {
+      color: #ccc;
+    }
+
+    .user-icon {
+      background-color: #a58bff;
+      color: white;
+      font-size: 20px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      transition: transform 0.3s ease;
+    }
+
+    .user-icon:hover {
+      transform: scale(1.1);
+    }
+
+    form {
+      text-align: left;
+    }
+
+    .form-group {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 13px;
+      background-color: #f9f9f9;
+      outline: none;
+    }
+
+    body.dark .form-group input {
+      background-color: #444;
+      color: white;
+      border: 1px solid #666;
+    }
+
+    .form-group label {
+      position: absolute;
+      top: 50%;
+      left: 10px;
+      color: #888;
+      font-size: 13px;
+      transform: translateY(-50%);
+      pointer-events: none;
+      transition: all 0.2s ease;
+    }
+
+    .form-group input:focus + label,
+    .form-group input:not(:placeholder-shown) + label {
+      top: -8px;
+      left: 8px;
+      background-color: white;
+      padding: 0 6px;
+      font-size: 11px;
+      color: #7f5af0;
+    }
+
+    body.dark .form-group input:focus + label,
+    body.dark .form-group input:not(:placeholder-shown) + label {
+      background-color: #2b2b38;
+      color: #a58bff;
+    }
+
+    .remember-forgot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      margin-top: -8px;
+    }
+
+    .remember-forgot a {
+      color: #6c63ff;
+      text-decoration: none;
+    }
+
+    .remember-forgot input[type="checkbox"] {
+      margin-right: 4px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(135deg, #7f5af0, #5f4dee);
+      color: white;
+      border: none;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 15px;
+      transition: background 0.3s ease;
+    }
+
+    .submit-btn:hover {
+      background: linear-gradient(135deg, #6b4dd3, #503ec3);
+    }
+
+    .footer-link {
+      font-size: 12px;
+      margin-top: 16px;
+    }
+
+    .footer-link a {
+      color: #6c63ff;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .social-login {
+      margin-top: 25px;
+      border-top: 1px solid #ddd;
+      padding-top: 15px;
+      font-size: 12px;
+    }
+
+    .social-icons {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 10px;
+    }
+
+    .social-icons i {
+      font-size: 18px;
+      color: #444;
+      border: 1px solid #ccc;
+      border-radius: 50%;
+      padding: 8px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .social-icons i:hover {
+      transform: scale(1.1);
+      background: #f0f0f0;
+      color: #7f5af0;
+    }
+
+    .message-error { color: red; font-size: 13px; }
+    .message-success { color: green; font-size: 13px; }
+    .message-info { color: blue; font-size: 13px; }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 25px 16px;
+      }
+    }
+
+    @keyframes fadeInUp {
+      from { transform: translateY(40px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+  </style>
 </head>
 <body>
 
-<h2>Login</h2>
+<!-- Progress Bar -->
+<div class="progress-bar" id="progress"></div>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <ul>
-      {% for category, message in messages %}
-        <li class="message-{{ category }}">{{ message }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
-{% endwith %}
+<!-- Dark Mode Toggle -->
+<button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
+  <i class="fas fa-moon"></i>
+</button>
 
-<form method="POST" id="login-form" autocomplete="off">
+<!-- Custom Cursor -->
+<div class="custom-cursor" id="cursor"></div>
+
+<!-- Main Container -->
+<div class="container">
+  <h2>Welcome Back</h2>
+  <p>Sign in to continue to your account</p>
+
+  <div class="user-icon"><i class="fas fa-user"></i></div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul>
+        {% for category, message in messages %}
+          <li class="message-{{ category }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <form method="POST" onsubmit="return playFeedback()">
     {{ form.hidden_tag() }}
 
-    <p>{{ form.username.label }}<br>
-        <input type="text" name="username" id="username" size="30" value="{{ request.form.username or '' }}" autocomplete="off">
-    </p>
+    <div class="form-group">
+      {{ form.username(class="input", placeholder=" ", id="email") }}
+      <label for="email">Email Address</label>
+    </div>
 
-    <p>{{ form.password.label }}<br>
-        <input type="password" name="password" id="password" size="30" autocomplete="off">
-    </p>
+    <div class="form-group">
+      {{ form.password(class="input", placeholder=" ", id="password") }}
+      <label for="password">Password</label>
+    </div>
 
-    <label><input type="checkbox" onclick="togglePassword()"> Show Password</label><br><br>
+    <div class="remember-forgot">
+      <label><input type="checkbox" onclick="togglePassword()"> Show Password</label>
+      <a href="{{ url_for('auth.forgot_password') }}">Forgot Password?</a>
+    </div>
 
-    <label>
-        <input type="checkbox" id="remember-checkbox" name="remember">
-        Remember Me
-    </label><br><br>
+    <label style="font-size: 12px; display: block; margin-top: 8px;">
+      {{ form.remember() }} Remember Me
+    </label>
 
-    <button type="submit">Login</button>
-</form>
+    <input type="submit" class="submit-btn" value="Sign In" id="submitBtn">
+  </form>
 
-<p>
-    <a href="{{ url_for('auth.forgot_password') }}">Forgot Password?</a><br>
-    <a href="{{ url_for('auth.register') }}">Don't have an account? Register</a>
-</p>
+  <div class="footer-link">
+    Don't have an account? <a href="{{ url_for('auth.register') }}">Sign up</a>
+  </div>
 
+  <div class="social-login">
+    <div>Or continue with</div>
+    <div class="social-icons">
+      <i class="fab fa-google"></i>
+      <i class="fab fa-facebook-f"></i>
+      <i class="fab fa-github"></i>
+    </div>
+    <p style="margin-top:10px; font-size:11px; color:#aaa;">This is a demo login page</p>
+  </div>
+</div>
+
+<!-- Audio -->
+<audio id="loginSound">
+  <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_f04f02c1f1.mp3?filename=click-tone-107087.mp3" type="audio/mp3">
+</audio>
+
+<!-- Scripts -->
 <script>
-    function togglePassword() {
-        const pwdField = document.getElementById("password");
-        pwdField.type = pwdField.type === "password" ? "text" : "password";
+  // Custom Cursor
+  const cursor = document.getElementById("cursor");
+  document.addEventListener("mousemove", (e) => {
+    cursor.style.left = `${e.clientX}px`;
+    cursor.style.top = `${e.clientY}px`;
+  });
+
+  // Toggle Password Visibility
+  function togglePassword() {
+    const pwd = document.getElementById("password");
+    pwd.type = pwd.type === "password" ? "text" : "password";
+  }
+
+  // Theme Toggle with Local Storage
+  function toggleTheme() {
+    document.body.classList.toggle("dark");
+    const isDark = document.body.classList.contains("dark");
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  }
+
+  // Load saved theme on page load
+  function checkSavedTheme() {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "dark") {
+      document.body.classList.add("dark");
     }
+  }
 
-    const rememberCheckbox = document.getElementById('remember-checkbox');
-    const loginForm = document.getElementById('login-form');
+  // Call on page load
+  checkSavedTheme();
 
-    loginForm.addEventListener('submit', function () {
-        if (rememberCheckbox.checked) {
-            document.getElementById('username').setAttribute('autocomplete', 'on');
-            document.getElementById('password').setAttribute('autocomplete', 'on');
-        } else {
-            document.getElementById('username').setAttribute('autocomplete', 'off');
-            document.getElementById('password').setAttribute('autocomplete', 'off');
-        }
-    });
+  // Login Sound + Progress Bar
+  function playFeedback() {
+    const audio = document.getElementById("loginSound");
+    const progress = document.getElementById("progress");
 
-    // Optional: clear values on load if remember not checked
-    window.addEventListener('load', function () {
-        if (!rememberCheckbox.checked) {
-            document.getElementById('username').value = '';
-            document.getElementById('password').value = '';
-        }
-    });
+    audio.play();
+    progress.style.width = "100%";
+
+    setTimeout(() => {
+      progress.style.width = "0%";
+    }, 2000);
+
+    return true;
+  }
 </script>
 
 </body>
