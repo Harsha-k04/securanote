@@ -64,11 +64,11 @@
     .hero-container { display:grid; grid-template-columns:1fr 1fr; gap:4rem; max-width:1200px;margin:auto;align-items:center;position:relative;z-index:1;}
     .hero-content { opacity:0;transform:translateX(-50px);animation:slideInLeft 1s ease-out .5s forwards; }
     .hero-title { font-size:3.5rem;font-weight:bold;line-height:1.2;margin-bottom:1.5rem;background:linear-gradient(135deg,#333,#ff6b35);-webkit-background-clip:text;-webkit-text-fill-color:transparent; }
-    ..security-highlight {
+    .security-highlight {  /* fixed from `..security-highlight` */
       background: linear-gradient(90deg, #e76f51, #2a9d8f);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-       position: relative;
+      position: relative;
     }
 
      .hero {
@@ -209,35 +209,29 @@
 
   <!-- Hero -->
   <section class="hero">
-    <div class="hero-container">
-      <div class="hero-content">
-        <div class="hero-content">
-    <!-- Left side: Text -->
-     <div class="hero-text" data-aos="fade-up">
+  <div class="hero-container">
+    <div class="hero-content">
+      <!-- Left side: Text -->
+      <div class="hero-text" data-aos="fade-up">
         <h1 class="hero-title">
-           NEXT-GEN <span class="security-highlight">SECURITY</span> FOR YOUR DIGITAL ASSETS
+          NEXT-GEN <span class="security-highlight">SECURITY</span> FOR YOUR DIGITAL ASSETS
         </h1>
-     </div>
-        
-          
-          </section>
-        <p class="hero-subtitle">
-          Military-grade encryption for your notes, images, and videos with four-pin authentication and secure S3 storage.
-        </p>
-        <div class="hero-buttons">
-          <a href="#" class="btn-primary">START ENCRYPTING</a>
-          <a href="#features" class="btn-secondary">LEARN MORE</a>
-        </div>
       </div>
-      <div class="security-box">
-          <h3><div class="shield-icon">🛡️</div>SECURE ACCESS</h3>
-          <p>Enter your 4‑pin authentication code to access your encrypted data.</p>
-          <input type="text" class="pin-input" placeholder="● ● ● ●" readonly>
-        </div>
+      <p class="hero-subtitle">
+        Military-grade encryption for your notes, images, and videos with four-pin authentication and secure S3 storage.
+      </p>
+      <div class="hero-buttons">
+        <a href="#" class="btn-primary">START ENCRYPTING</a>
+        <a href="#features" class="btn-secondary">LEARN MORE</a>
       </div>
     </div>
+    <div class="security-box">
+      <h3><div class="shield-icon">🛡️</div>SECURE ACCESS</h3>
+      <p>Enter your 4‑pin authentication code to access your encrypted data.</p>
+      <input type="text" class="pin-input" placeholder="● ● ● ●" readonly>
+    </div>
   </div>
-  </section>
+</section>
 
   <!-- Features -->
   <section id="features" data-aos="fade-right">
@@ -364,13 +358,13 @@
     <div class="footer-bottom">&copy; 2025 SecuraNote. All rights reserved.</div>
   </footer>
 
- </script>
-    // Navbar scroll effect
-    window.addEventListener('scroll', () => {
-      document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
-    });
-  </script>
-  <!-- Before closing </body> tag -->
+<!-- JS at bottom of body -->
+<script>
+  // Navbar scroll effect
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+  });
+</script>
 <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
 <script>
   AOS.init();
