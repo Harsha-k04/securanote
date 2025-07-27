@@ -15,8 +15,8 @@ limiter = Limiter(
 )
 
 @app.route("/")
-def index():
-    return redirect("/login")
+def home():
+    return render_template("index.html")
 
 @app.route("/video")
 def serve_chacha_video():
