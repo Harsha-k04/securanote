@@ -58,3 +58,5 @@ wrapt==1.17.2
 WTForms==3.2.1
 gunicorn
 qrcode[pil]
+twofish
+pycryptodome
