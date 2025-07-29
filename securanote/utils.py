@@ -8,7 +8,7 @@ from botocore.exceptions import NoCredentialsError
 from botocore.config import Config
 import botocore.session
 import urllib3.util.ssl_
-from Crypto.Cipher import Twofish
+from twofish import Twofish
 from Crypto.Util.Padding import pad, unpad
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
