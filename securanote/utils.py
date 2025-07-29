@@ -8,7 +8,8 @@ from botocore.exceptions import NoCredentialsError
 from botocore.config import Config
 import botocore.session
 import urllib3.util.ssl_
-
+from Crypto.Cipher import Twofish
+from Crypto.Util.Padding import pad, unpad
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
 from Crypto.Cipher import AES, ChaCha20
@@ -62,6 +63,17 @@ try:
     chacha_key = base64.urlsafe_b64decode(CHACHA_KEY + '=' * (-len(CHACHA_KEY) % 4))
 except Exception as e:
     raise ValueError("Invalid CHACHA_KEY format. Must be base64-encoded 32-byte string.") from e
+# ----------------------------- #
+# Twofish Key Setup
+# ----------------------------- #
+TWOFISH_KEY = os.getenv("TWOFISH_KEY")
+if not TWOFISH_KEY:
+    raise EnvironmentError("TWOFISH_KEY not found in .env file")
+try:
+    twofish_key = base64.b64decode(TWOFISH_KEY + '=' * (-len(TWOFISH_KEY) % 4))
+except Exception as e:
+    raise ValueError("Invalid TWOFISH_KEY format. Must be base64-encoded 32-byte string.") from e
+
 
 # ----------------------------- #
 # Encryption/Decryption Functions
@@ -182,3 +194,16 @@ def delete_file_from_s3(filename: str) -> bool:
     except Exception as e:
         print("Delete failed:", e)
         return False
+def encrypt_twofish(plain_data: bytes) -> str:
+    cipher = Twofish.new(twofish_key, Twofish.MODE_CBC)
+    iv = cipher.iv
+    ciphertext = cipher.encrypt(pad(plain_data, Twofish.block_size))
+    return base64.urlsafe_b64encode(iv + ciphertext).decode()
+
+def decrypt_twofish(enc_data: str) -> str:
+    enc_data = enc_data.encode()
+    enc_data += b'=' * (-len(enc_data) % 4)
+    data = base64.urlsafe_b64decode(enc_data)
+    iv, ciphertext = data[:16], data[16:]
+    cipher = Twofish.new(twofish_key, Twofish.MODE_CBC, iv=iv)
+    return unpad(cipher.decrypt(ciphertext), Twofish.block_size).decode()
