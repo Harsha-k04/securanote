@@ -83,6 +83,8 @@ def encrypt_content(content: str, encryption_type: str) -> str:
         return fernet.encrypt(content.encode()).decode()
     elif encryption_type == 'ChaCha':
         return encrypt_chacha(content.encode())
+    elif encryption_type == 'Twofish':
+        return encrypt_twofish(content.encode())
     else:
         raise ValueError("Unsupported encryption type.")
 
@@ -98,6 +100,8 @@ def decrypt_content(encrypted_content: str, encryption_type: str) -> str:
         return fernet.decrypt(encrypted_content.encode()).decode()
     elif encryption_type == 'ChaCha':
         return decrypt_chacha(encrypted_content)
+    elif encryption_type == 'Twofish':
+        return decrypt_twofish(encrypted_content)
     else:
         raise ValueError("Unsupported encryption type.")
 
