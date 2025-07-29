@@ -569,7 +569,7 @@ def verify_edit_pin(note_id):
 
     return render_template("verify_edit_pin.html", note=note)
 
-@notes.route('/edit/<int:note_id>', methods=['GET', 'POST'])
+@notes_bp.route('/edit/<int:note_id>', methods=['GET', 'POST'])
 @login_required
 def edit_note(note_id):
     note = Note.query.get_or_404(note_id)
