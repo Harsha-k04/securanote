@@ -569,60 +569,68 @@ def verify_edit_pin(note_id):
 
     return render_template("verify_edit_pin.html", note=note)
 
-@notes_bp.route('/edit/<int:note_id>', methods=['GET', 'POST'])
+@notes.route('/edit/<int:note_id>', methods=['GET', 'POST'])
 @login_required
 def edit_note(note_id):
     note = Note.query.get_or_404(note_id)
+
     if note.user_id != current_user.id:
         abort(403)
 
-    if not session.get(f'edit_verified_{note_id}'):
-        flash("PIN verification required before editing.", "error")
-        return redirect(url_for('notes.verify_edit_pin', note_id=note_id))
-
-    pin_used = session.get(f'pin_used_{note_id}')
-    if note.encryption_type == 'AES':
-        decrypted_content = fernet.decrypt(note.encrypted_content.encode()).decode()
-    elif note.encryption_type == 'ChaCha':
-        decrypted_content = decrypt_chacha(note.encrypted_content)
-    elif note.encryption_type == 'Twofish':
-        decrypted_content = decrypt_twofish(note.encrypted_content)
-    else:
-        decrypted_content = ""
-
     if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
-        encryption_type = request.form['encryption_type']
-        new_pin = request.form.get('pin')
+        title = request.form.get('title')
+        content = request.form.get('content')
+        encryption_type = request.form.get('encryption_type')
 
-        if encryption_type not in ['AES', 'ChaCha','Twofish']:
-            flash('Invalid encryption type.', 'error')
+        if not title or not content:
+            flash('Title and content are required.', 'error')
             return redirect(url_for('notes.edit_note', note_id=note_id))
 
-        if encryption_type == 'AES':
-            encrypted = fernet.encrypt(content.encode()).decode()
-        elif encryption_type == 'Chacha':
-             encrypted = encrypt_chacha(content.encode()).decode()
-        else:
-            encrypted = encrypt_twofish(content.encode())
+        # Encrypt based on selected method
+        try:
+            if encryption_type == 'AES':
+                encrypted = fernet.encrypt(content.encode()).decode()
+            elif encryption_type == 'ChaCha':
+                encrypted = encrypt_chacha(content.encode())
+            elif encryption_type == 'Twofish':
+                encrypted = encrypt_twofish(content.encode())
+            else:
+                flash('Invalid encryption type selected.', 'error')
+                return redirect(url_for('notes.edit_note', note_id=note_id))
+        except Exception as e:
+            flash(f'Encryption error: {str(e)}', 'error')
+            return redirect(url_for('notes.edit_note', note_id=note_id))
 
+        # Update the note
         note.title = title
         note.encrypted_content = encrypted
         note.encryption_type = encryption_type
+        note.timestamp = datetime.utcnow()
 
-        if new_pin:
-            note.pin_hash = generate_password_hash(new_pin)
+        try:
+            db.session.commit()
+            flash('Note updated successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Failed to update note: {str(e)}', 'error')
 
-        db.session.commit()
+        return redirect(url_for('notes.view_note', note_id=note.id))
 
-        session.pop(f'edit_verified_{note_id}', None)
-        session.pop(f'pin_used_{note_id}', None)
+    # Decrypt the note content for display
+    try:
+        if note.encryption_type == 'AES':
+            decrypted_content = fernet.decrypt(note.encrypted_content.encode()).decode()
+        elif note.encryption_type == 'ChaCha':
+            decrypted_content = decrypt_chacha(note.encrypted_content)
+        elif note.encryption_type == 'Twofish':
+            decrypted_content = decrypt_twofish(note.encrypted_content)
+        else:
+            decrypted_content = ""
+    except Exception as e:
+        flash(f'Error decrypting note: {str(e)}', 'error')
+        decrypted_content = ""
 
-        flash('Note updated successfully.', 'success')
-        return redirect(url_for('notes.dashboard'))
-
-    return render_template('edit_note.html', note=note, decrypted=decrypted_content)
+    return render_template('edit_note.html', note=note, decrypted_content=decrypted_content)
 
 @notes_bp.route("/note/<int:note_id>/verify-otp", methods=["GET", "POST"])
 @login_required
