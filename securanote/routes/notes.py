@@ -71,8 +71,8 @@ def dashboard():
                 encrypted_content = fernet.encrypt(content.encode()).decode()
             elif encryption_type == 'ChaCha':
                 encrypted_content = encrypt_chacha(content.encode())
-            elif encryption_type == 'Twofish':
-                encrypted_content = encrypt_twofish(content.encode())
+            elif encryption_type == 'Blowfish':
+                encrypted_content = encrypt_Blowfish(content.encode())
             else:
                 flash('Invalid encryption type selected.', 'error')
                 return redirect(url_for('notes.dashboard'))
@@ -97,8 +97,8 @@ def dashboard():
                     encrypted_file_data = encrypt_chacha(file_data)
                     if isinstance(encrypted_file_data, str):
                         encrypted_file_data = encrypted_file_data.encode()
-                elif encryption_type == 'Twofish':
-                    encrypted_file_data = encrypt_twofish(file_data).encode()
+                elif encryption_type == 'Blowfish':
+                    encrypted_file_data = encrypt_Blowfish(file_data).encode()
             except Exception as e:
                 flash(f"File encryption failed: {e}", 'error')
                 return redirect(url_for('notes.dashboard'))
@@ -205,8 +205,8 @@ def view_note(note_id):
             decrypted = fernet.decrypt(note.encrypted_content.encode()).decode()
         elif note.encryption_type == 'ChaCha':
             decrypted = decrypt_chacha(note.encrypted_content)
-        elif note.encryption_type == 'Twofish':
-            decrypted = decrypt_twofish(note.encrypted_content)
+        elif note.encryption_type == 'Blowfish':
+            decrypted = decrypt_Blowfish(note.encrypted_content)
         else:
             flash("Unsupported encryption type.", "danger")
             return render_template("enter_pin.html", note=note)
@@ -229,8 +229,8 @@ def view_note(note_id):
                 decrypted_data = fernet.decrypt(encrypted_data)
             elif note.encryption_type == 'ChaCha':
                 decrypted_data = decrypt_chacha_bytes(encrypted_data)
-            elif note.encryption_type == 'Twofish':
-                decrypted_data = decrypt_twofish_bytes(encrypted_data)
+            elif note.encryption_type == 'Blowfish':
+                decrypted_data = decrypt_Blowfish_bytes(encrypted_data)
             else:
                 flash("Unsupported file encryption type.", "danger")
                 return render_template("view_note.html", note=note, decrypted=decrypted)
@@ -303,8 +303,8 @@ def view_file(filename):
             decrypted_data = fernet.decrypt(encrypted_data)
         elif note.encryption_type == 'ChaCha':
             decrypted_data = decrypt_chacha_bytes(encrypted_data)
-        elif note.encryption_type == 'Twofish':
-            decrypted_data = decrypt_twofish_bytes(encrypted_data)
+        elif note.encryption_type == 'Blowfish':
+            decrypted_data = decrypt_Blowfish_bytes(encrypted_data)
         else:
             abort(400, description="Unsupported encryption type.")
 
@@ -393,12 +393,12 @@ def export_pdf():
                     decrypted_data = fernet.decrypt(encrypted_data)
                 elif note.encryption_type == 'ChaCha':
                     decrypted_data = decrypt_chacha_bytes(encrypted_data)
-                elif note.encryption_type == 'Twofish':
+                elif note.encryption_type == 'Blowfish':
     # For text
-                    decrypted = decrypt_twofish(note.encrypted_content)
+                    decrypted = decrypt_Blowfish(note.encrypted_content)
 
     # For file
-                    decrypted_data = decrypt_twofish_bytes(encrypted_data)
+                    decrypted_data = decrypt_Blowfish_bytes(encrypted_data)
                 else:
                     flash("Unsupported encryption type.", "error")
                     return redirect(url_for("notes.view_note", note_id=note.id))
@@ -466,12 +466,12 @@ def shared_note(token):
             decrypted = fernet.decrypt(note.encrypted_content.encode()).decode()
         elif note.encryption_type == 'ChaCha':
             decrypted = decrypt_chacha(note.encrypted_content)
-        elif note.encryption_type == 'Twofish':
+        elif note.encryption_type == 'Blowfish':
     # For text
-            decrypted = decrypt_twofish(note.encrypted_content)
+            decrypted = decrypt_Blowfish(note.encrypted_content)
 
     # For file
-            decrypted_data = decrypt_twofish_bytes(encrypted_data)
+            decrypted_data = decrypt_Blowfish_bytes(encrypted_data)
         else:
             return "<h3>Unsupported encryption.</h3>"
     except Exception as e:
@@ -495,8 +495,8 @@ def shared_note(token):
                         decrypted_data = fernet.decrypt(encrypted_data)
                     elif note.encryption_type == 'ChaCha':
                         decrypted_data = decrypt_chacha_bytes(encrypted_data)
-                    elif note.encryption_type == 'Twofish':
-                        decrypted_data = decrypt_twofish_bytes(encrypted_data)
+                    elif note.encryption_type == 'Blowfish':
+                        decrypted_data = decrypt_Blowfish_bytes(encrypted_data)
                     else:
                         return "<h3>Unsupported file encryption.</h3>"
 
@@ -592,8 +592,8 @@ def edit_note(note_id):
                 encrypted = fernet.encrypt(content.encode()).decode()
             elif encryption_type == 'ChaCha':
                 encrypted = encrypt_chacha(content.encode())
-            elif encryption_type == 'Twofish':
-                encrypted = encrypt_twofish(content.encode())
+            elif encryption_type == 'Blowfish':
+                encrypted = encrypt_Blowfish(content.encode())
             else:
                 flash('Invalid encryption type selected.', 'error')
                 return redirect(url_for('notes.edit_note', note_id=note_id))
@@ -622,8 +622,8 @@ def edit_note(note_id):
             decrypted_content = fernet.decrypt(note.encrypted_content.encode()).decode()
         elif note.encryption_type == 'ChaCha':
             decrypted_content = decrypt_chacha(note.encrypted_content)
-        elif note.encryption_type == 'Twofish':
-            decrypted_content = decrypt_twofish(note.encrypted_content)
+        elif note.encryption_type == 'Blowfish':
+            decrypted_content = decrypt_Blowfish(note.encrypted_content)
         else:
             decrypted_content = ""
     except Exception as e:
