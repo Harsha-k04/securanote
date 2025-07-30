@@ -250,6 +250,7 @@ def view_note(note_id):
                 decrypted_data = decrypt_blowfish_bytes(encrypted_data)
             else:
                 flash("Unsupported file encryption type.", "danger")
+                note.content = decrypted
                 return render_template("view_note.html", note=note, decrypted=decrypted)
 
             # Save decrypted file to temp folder
