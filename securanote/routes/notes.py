@@ -79,12 +79,17 @@ def dashboard():
                 encrypted_content = encrypt_chacha(content.encode())
             elif encryption_type == 'Blowfish':
                 encrypted_content = encrypt_blowfish(content.encode(), blowfish_key)
+                print("Encrypted Blowfish content:", encrypted_content)
+
             else:
                 flash('Invalid encryption type selected.', 'error')
                 return redirect(url_for('notes.dashboard'))
         except Exception as e:
             flash(f"Content encryption failed: {e}", "error")
             return redirect(url_for('notes.dashboard'))
+        
+        print("Encrypted Blowfish content:", encrypted_content)
+
 
         pin_hash = generate_password_hash(pin)
 
