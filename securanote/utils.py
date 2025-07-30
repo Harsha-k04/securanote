@@ -103,7 +103,7 @@ def decrypt_content(encrypted_content: str, encryption_type: str) -> str:
     elif encryption_type == 'Blowfish':
         if not blowfish_key:
             raise ValueError("Blowfish decryption requires user-specific key.")
-        return decrypt_blowfish(encrypted_content, blowfish_key.encode())
+        return decrypt_blowfish(encrypted_content, blowfish_key)
     else:
         raise ValueError("Unsupported encryption type.")
 
@@ -165,7 +165,7 @@ def decrypt_blowfish(enc_data: str, key: bytes) -> str:
     cipher = Blowfish.new(key, Blowfish.MODE_CBC, iv)
     decrypted = unpad(cipher.decrypt(ciphertext), BLOWFISH_BLOCK_SIZE)
     return decrypted.decode()
-print("Loaded Blowfish key:", blowfish_key)
+
 
 
 
@@ -228,3 +228,26 @@ def delete_file_from_s3(filename: str) -> bool:
     except Exception as e:
         print("Delete failed:", e)
         return False
+def encrypt_blowfish_bytes(plain_data: bytes, key: bytes) -> bytes:
+    cipher = Blowfish.new(key, Blowfish.MODE_CBC)
+    iv = cipher.iv
+    padded_data = pad(plain_data, BLOWFISH_BLOCK_SIZE)
+    ciphertext = cipher.encrypt(padded_data)
+    return iv + ciphertext
+
+def decrypt_blowfish_bytes(encrypted_data: bytes, key: bytes) -> bytes:
+    iv = encrypted_data[:BLOWFISH_BLOCK_SIZE]
+    ciphertext = encrypted_data[BLOWFISH_BLOCK_SIZE:]
+    cipher = Blowfish.new(key, Blowfish.MODE_CBC, iv)
+    decrypted = unpad(cipher.decrypt(ciphertext), BLOWFISH_BLOCK_SIZE)
+    return decrypted
+def encrypt_video_file_blowfish(input_path: str, output_path: str):
+    with open(input_path, 'rb') as f:
+        file_data = f.read()
+    encrypted_bytes = encrypt_blowfish_bytes(file_data, blowfish_key)
+    with open(output_path, 'wb') as f:
+        f.write(encrypted_bytes)
+def decrypt_video_file_blowfish(input_path: str) -> bytes:
+    with open(input_path, 'rb') as f:
+        encrypted_bytes = f.read()
+    return decrypt_blowfish_bytes(encrypted_bytes, blowfish_key)
