@@ -82,7 +82,9 @@ def encrypt_content(content: str, encryption_type: str) -> str:
     elif encryption_type == 'ChaCha':
         return encrypt_chacha(content.encode())
     elif encryption_type == 'Blowfish':
-        return encrypt_blowfish(content.encode())
+        if not user_blowfish_key:
+            raise ValueError("Blowfish encryption requires user-specific key.")
+        return encrypt_blowfish(content.encode(), user_blowfish_key.encode())
     else:
         raise ValueError("Unsupported encryption type.")
 
@@ -99,7 +101,9 @@ def decrypt_content(encrypted_content: str, encryption_type: str) -> str:
     elif encryption_type == 'ChaCha':
         return decrypt_chacha(encrypted_content)
     elif encryption_type == 'Blowfish':
-        return decrypt_blowfish(encrypted_content)
+        if not user_blowfish_key:
+            raise ValueError("Blowfish decryption requires user-specific key.")
+        return decrypt_blowfish(encrypted_content, user_blowfish_key.encode())
     else:
         raise ValueError("Unsupported encryption type.")
 
@@ -145,22 +149,23 @@ def decrypt_chacha_bytes(enc_data) -> bytes:
 # ----------------------------- #
 # Blowfish Encryption
 # ----------------------------- #
-def encrypt_blowfish(plain_data: bytes) -> str:
-    cipher = Blowfish.new(blowfish_key, Blowfish.MODE_CBC)
+def encrypt_blowfish(plain_data: bytes, key: bytes) -> str:
+    cipher = Blowfish.new(key, Blowfish.MODE_CBC)
     iv = cipher.iv
     padded_data = pad(plain_data, BLOWFISH_BLOCK_SIZE)
     ciphertext = cipher.encrypt(padded_data)
     return base64.urlsafe_b64encode(iv + ciphertext).decode()
 
-def decrypt_blowfish(enc_data: str) -> str:
+def decrypt_blowfish(enc_data: str, key: bytes) -> str:
     enc_data = enc_data.encode()
     enc_data += b'=' * (-len(enc_data) % 4)
     raw = base64.urlsafe_b64decode(enc_data)
     iv = raw[:BLOWFISH_BLOCK_SIZE]
     ciphertext = raw[BLOWFISH_BLOCK_SIZE:]
-    cipher = Blowfish.new(blowfish_key, Blowfish.MODE_CBC, iv)
+    cipher = Blowfish.new(key, Blowfish.MODE_CBC, iv)
     decrypted = unpad(cipher.decrypt(ciphertext), BLOWFISH_BLOCK_SIZE)
     return decrypted.decode()
+
 
 # ----------------------------- #
 # AES Note Encryption
