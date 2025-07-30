@@ -66,6 +66,7 @@
           <select name="encryption_type" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
             <option value="AES" {% if note.encryption_type == 'AES' %}selected{% endif %}>AES-256</option>
             <option value="ChaCha" {% if note.encryption_type == 'ChaCha' %}selected{% endif %}>ChaCha20</option>
+            <option value="Blowfish" {% if note.encryption_type == 'Blowfish' %}selected{% endif %}>Blowfish</option>
           </select>
         </div>
 
