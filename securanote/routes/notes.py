@@ -109,7 +109,7 @@ def dashboard():
                     if isinstance(encrypted_file_data, str):
                         encrypted_file_data = encrypted_file_data.encode()
                 elif encryption_type == 'Blowfish':
-                    encrypted_file_data = encrypt_Blowfish(file_data).encode()
+                    encrypted_file_data = encrypt_blowfish(file_data).encode()
             except Exception as e:
                 flash(f"File encryption failed: {e}", 'error')
                 return redirect(url_for('notes.dashboard'))
@@ -412,7 +412,7 @@ def export_pdf():
                     decrypted_data = decrypt_chacha_bytes(encrypted_data)
                 elif note.encryption_type == 'Blowfish':
     # For text
-                    decrypted = decrypt_Blowfish(note.encrypted_content)
+                    decrypted = decrypt_blowfish(note.encrypted_content)
 
     # For file
                     decrypted_data = decrypt_blowfish_bytes(encrypted_data)
@@ -485,7 +485,7 @@ def shared_note(token):
             decrypted = decrypt_chacha(note.encrypted_content)
         elif note.encryption_type == 'Blowfish':
     # For text
-            decrypted = decrypt_Blowfish(note.encrypted_content)
+            decrypted = decrypt_blowfish(note.encrypted_content)
 
     # For file
             decrypted_data = decrypt_blowfish_bytes(encrypted_data)
@@ -640,7 +640,7 @@ def edit_note(note_id):
         elif note.encryption_type == 'ChaCha':
             decrypted_content = decrypt_chacha(note.encrypted_content)
         elif note.encryption_type == 'Blowfish':
-            decrypted_content = decrypt_Blowfish(note.encrypted_content)
+            decrypted_content = decrypt_blowfish(note.encrypted_content)
         else:
             decrypted_content = ""
     except Exception as e:
