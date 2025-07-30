@@ -219,10 +219,10 @@ def view_note(note_id):
         elif note.encryption_type == 'Blowfish':
              if note.content:
                 decrypted = decrypt_blowfish(note.content, BLOWFISH_KEY)
-            elif note.file_name:
+             elif note.file_name:
                 file_data = download_file_from_s3(note.file_name)  # This returns bytes
                 decrypted = decrypt_blowfish(file_data.decode("utf-8"), BLOWFISH_KEY)
-            else:
+             else:
                 decrypted = "No content found."
         else:
             flash("Unsupported encryption type.", "danger")
