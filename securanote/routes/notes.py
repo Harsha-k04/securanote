@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from securanote import db
 from securanote.models import Note
-from securanote.utils import decrypt_content, encrypt_content
+from securanote.utils import decrypt_content, encrypt_contentencrypt_blowfish,decrypt_blowfish,BLOWFISH_KEY
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 import os
@@ -72,7 +72,7 @@ def dashboard():
             elif encryption_type == 'ChaCha':
                 encrypted_content = encrypt_chacha(content.encode())
             elif encryption_type == 'Blowfish':
-                encrypted_content = encrypt_Blowfish(content.encode())
+                encrypted_content = encrypt_blowfish(content.encode(), blowfish_key)
             else:
                 flash('Invalid encryption type selected.', 'error')
                 return redirect(url_for('notes.dashboard'))
@@ -206,7 +206,7 @@ def view_note(note_id):
         elif note.encryption_type == 'ChaCha':
             decrypted = decrypt_chacha(note.encrypted_content)
         elif note.encryption_type == 'Blowfish':
-            decrypted = decrypt_Blowfish(note.encrypted_content)
+            decrypted_content = decrypt_blowfish(note.content, blowfish_key)
         else:
             flash("Unsupported encryption type.", "danger")
             return render_template("enter_pin.html", note=note)
