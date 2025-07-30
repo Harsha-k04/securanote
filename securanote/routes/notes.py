@@ -217,7 +217,13 @@ def view_note(note_id):
         elif note.encryption_type == 'ChaCha':
             decrypted = decrypt_chacha(note.encrypted_content)
         elif note.encryption_type == 'Blowfish':
-            decrypted_content = decrypt_blowfish(note.content, blowfish_key)
+             if note.content:
+                decrypted = decrypt_blowfish(note.content, BLOWFISH_KEY)
+            elif note.file_name:
+                file_data = download_file_from_s3(note.file_name)  # This returns bytes
+                decrypted = decrypt_blowfish(file_data.decode("utf-8"), BLOWFISH_KEY)
+            else:
+                decrypted = "No content found."
         else:
             flash("Unsupported encryption type.", "danger")
             return render_template("enter_pin.html", note=note)
