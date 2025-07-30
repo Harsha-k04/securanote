@@ -1,19 +1,11 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, session, current_app, send_file
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
-from cryptography.fernet import Fernet
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from securanote import db
 from securanote.models import Note
-from securanote.utils import (
-    encrypt_content,
-    decrypt_content,
-    encrypt_blowfish,
-    decrypt_blowfish,
-    blowfish_key
-)
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 import os
@@ -21,35 +13,28 @@ import io
 from PIL import Image
 import uuid
 import base64
-from securanote.utils import fernet, encrypt_chacha, decrypt_chacha, decrypt_chacha_bytes
 import mimetypes
-from datetime import datetime,timedelta
 import random
 import smtplib
 from email.message import EmailMessage
-from securanote.utils import upload_file_to_s3, download_file_from_s3
 import qrcode
+
+# UTILITIES
+from securanote.utils import (
+    encrypt_blowfish, decrypt_blowfish,
+    encrypt_blowfish_bytes, decrypt_blowfish_bytes,
+    blowfish_key,
+    encrypt_chacha, decrypt_chacha, decrypt_chacha_bytes,
+    upload_file_to_s3, download_file_from_s3,
+    fernet
+)
 
 # Load env
 load_dotenv()
 
 notes_bp = Blueprint('notes', __name__)
 
-
-
-
-
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'pdf'}
-
-mimetype_dict = {
-     'png': 'image/png',
-     'jpg': 'image/jpeg',
-     'jpeg': 'image/jpeg',
-     'gif': 'image/gif',
-     'mp3': 'audio/mpeg',
-     'mp4': 'video/mp4',
-     'pdf': 'application/pdf',
-}
 
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -79,17 +64,12 @@ def dashboard():
                 encrypted_content = encrypt_chacha(content.encode())
             elif encryption_type == 'Blowfish':
                 encrypted_content = encrypt_blowfish(content.encode(), blowfish_key)
-                print("Encrypted Blowfish content:", encrypted_content)
-
             else:
                 flash('Invalid encryption type selected.', 'error')
                 return redirect(url_for('notes.dashboard'))
         except Exception as e:
             flash(f"Content encryption failed: {e}", "error")
             return redirect(url_for('notes.dashboard'))
-        
-        print("Encrypted Blowfish content:", encrypted_content)
-
 
         pin_hash = generate_password_hash(pin)
 
@@ -100,7 +80,6 @@ def dashboard():
         if file and file.filename != '' and allowed_file(file.filename):
             filename = f"{uuid.uuid4().hex}_{secure_filename(file.filename)}"
             file_data = file.read()
-
             try:
                 if encryption_type == 'AES':
                     encrypted_file_data = fernet.encrypt(file_data)
@@ -109,7 +88,7 @@ def dashboard():
                     if isinstance(encrypted_file_data, str):
                         encrypted_file_data = encrypted_file_data.encode()
                 elif encryption_type == 'Blowfish':
-                    encrypted_file_data = encrypt_blowfish(file_data).encode()
+                    encrypted_file_data = encrypt_blowfish_bytes(file_data, blowfish_key)
             except Exception as e:
                 flash(f"File encryption failed: {e}", 'error')
                 return redirect(url_for('notes.dashboard'))
@@ -118,11 +97,6 @@ def dashboard():
             if not upload_success:
                 flash("Failed to upload encrypted file to cloud.", "error")
                 return redirect(url_for("notes.dashboard"))
-            if request.form.get("share_note") == "yes":
-                new_note.share_token = uuid.uuid4().hex
-                new_note.views_left = 1  # View once only
-                new_note.share_expiry = None
-
 
         new_note = Note(
             title=title,
@@ -134,6 +108,11 @@ def dashboard():
             file_path=filename,
             file_data=encrypted_file_data
         )
+
+        if request.form.get("share_note") == "yes":
+            new_note.share_token = uuid.uuid4().hex
+            new_note.views_left = 1  # View once only
+            new_note.share_expiry = None
 
         db.session.add(new_note)
         db.session.commit()
@@ -157,7 +136,7 @@ def view_note(note_id):
     share_link = None
     qr_image_url = None
     qr_code_base64 = None
-    decrypted_path = None  # Ensure it's defined before use
+    decrypted_path = None
 
     attempt_key = f"attempts_note_{note_id}"
     session.setdefault(attempt_key, 0)
@@ -165,47 +144,34 @@ def view_note(note_id):
     if request.method == "POST":
         if "pin" in request.form:
             entered_pin = request.form["pin"]
-
             if check_password_hash(note.pin_hash, entered_pin):
                 session[f"pin_used_{note_id}"] = entered_pin
                 session.pop(f"pin_attempts_{note_id}", None)
             else:
                 attempts = session.get(f"pin_attempts_{note_id}", 0) + 1
                 session[f"pin_attempts_{note_id}"] = attempts
-
                 if attempts >= 3:
                     session.pop(f"pin_attempts_{note_id}", None)
                     return redirect(url_for("notes.verify_email_for_reset", note_id=note_id))
-
                 flash("Incorrect PIN", "danger")
                 return render_template("enter_pin.html", note=note, attempts=session[attempt_key])
 
         elif "generate_link" in request.form:
-              view_once = request.form.get("view_once") == "on"
-
-              # Generate a new token every time
-              note.share_token = uuid.uuid4().hex
-              note.views_left = 1 if view_once else None
-              db.session.commit()
-
-              # Generate link
-              share_link = url_for("notes.shared_note", token=note.share_token, _external=True)
-
-              # Generate QR from the link
-              qr = qrcode.make(share_link)
-              filename = f"{note.id}_qr.png"
-              temp_folder = os.path.join(current_app.root_path, 'static', 'temp')
-              os.makedirs(temp_folder, exist_ok=True)
-              qr_path = os.path.join(temp_folder, filename)
-              qr.save(qr_path)
-
-              qr_image_url = url_for('static', filename=f'temp/{filename}', _external=True)
-              buf = io.BytesIO()
-              qr.save(buf, format='PNG')
-              qr_code_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-
-
-
+            view_once = request.form.get("view_once") == "on"
+            note.share_token = uuid.uuid4().hex
+            note.views_left = 1 if view_once else None
+            db.session.commit()
+            share_link = url_for("notes.shared_note", token=note.share_token, _external=True)
+            qr = qrcode.make(share_link)
+            filename = f"{note.id}_qr.png"
+            temp_folder = os.path.join(current_app.root_path, 'static', 'temp')
+            os.makedirs(temp_folder, exist_ok=True)
+            qr_path = os.path.join(temp_folder, filename)
+            qr.save(qr_path)
+            qr_image_url = url_for('static', filename=f'temp/{filename}', _external=True)
+            buf = io.BytesIO()
+            qr.save(buf, format='PNG')
+            qr_code_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
 
     if request.method == "GET":
         return render_template("enter_pin.html", note=note, attempts=session[attempt_key])
@@ -217,13 +183,7 @@ def view_note(note_id):
         elif note.encryption_type == 'ChaCha':
             decrypted = decrypt_chacha(note.encrypted_content)
         elif note.encryption_type == 'Blowfish':
-             if note.content:
-                decrypted = decrypt_blowfish(note.encrypted_content, BLOWFISH_KEY)
-             elif note.file_name:
-                file_data = download_file_from_s3(note.file_name)  # This returns bytes
-                decrypted = decrypt_blowfish(file_data.decode("utf-8"), BLOWFISH_KEY)
-             else:
-                decrypted = "No content found."
+            decrypted = decrypt_blowfish(note.encrypted_content, blowfish_key)
         else:
             flash("Unsupported encryption type.", "danger")
             return render_template("enter_pin.html", note=note)
@@ -241,16 +201,14 @@ def view_note(note_id):
                 flash("Could not fetch encrypted file from cloud.", "danger")
                 return redirect(url_for("notes.view_note", note_id=note.id))
 
-            # Decrypt based on type
             if note.encryption_type == 'AES':
                 decrypted_data = fernet.decrypt(encrypted_data)
             elif note.encryption_type == 'ChaCha':
                 decrypted_data = decrypt_chacha_bytes(encrypted_data)
             elif note.encryption_type == 'Blowfish':
-                decrypted_data = decrypt_blowfish_bytes(encrypted_data)
+                decrypted_data = decrypt_blowfish_bytes(encrypted_data, blowfish_key)
             else:
                 flash("Unsupported file encryption type.", "danger")
-                note.content = decrypted
                 return render_template("view_note.html", note=note, decrypted=decrypted)
 
             # Save decrypted file to temp folder
@@ -259,15 +217,10 @@ def view_note(note_id):
             decrypted_path = os.path.join(temp_folder, note.file_path)
             with open(decrypted_path, 'wb') as out_file:
                 out_file.write(decrypted_data)
-
             if os.path.exists(decrypted_path):
                 file_url = url_for('static', filename=f'temp/{note.file_path}')
-                print("Decrypted file URL:", file_url)
-                print("File exists:", os.path.exists(decrypted_path))
-                print("File size:", os.path.getsize(decrypted_path))
             else:
                 print("Decrypted file was not saved:", decrypted_path)
-
         except Exception as e:
             flash(f"File decryption failed: {e}", "danger")
 
@@ -295,73 +248,59 @@ def send_otp_email(to_email, otp_code):
     msg["Subject"] = "Securanote OTP Verification"
     msg["From"] = "securanote@gmail.com"
     msg["To"] = to_email
-
     with smtplib.SMTP("smtp.gmail.com", 587) as server:
         server.starttls()
         server.login("securanote@gmail.com", "nyyq xzom ptoy fgjv")
         server.send_message(msg)
+
 # ------------------------ View Encrypted File ------------------------
 @notes_bp.route('/view_file/<filename>')
 @login_required
 def view_file(filename):
-    # Fetch note based on file name and user
     note = Note.query.filter_by(file_path=filename, user_id=current_user.id).first()
     if not note or not note.file_data:
         abort(404)
 
-    # Full path to the encrypted file
     file_path = os.path.join(current_app.root_path, 'static', 'uploads', filename)
-
     try:
         with open(file_path, 'rb') as f:
             encrypted_data = f.read()
-
-        # Decrypt according to encryption type
         if note.encryption_type == 'AES':
             decrypted_data = fernet.decrypt(encrypted_data)
         elif note.encryption_type == 'ChaCha':
             decrypted_data = decrypt_chacha_bytes(encrypted_data)
         elif note.encryption_type == 'Blowfish':
-            decrypted_data = decrypt_blowfish_bytes(encrypted_data)
+            decrypted_data = decrypt_blowfish_bytes(encrypted_data, blowfish_key)
         else:
             abort(400, description="Unsupported encryption type.")
-
     except Exception as e:
         abort(500, description=f"File decryption failed: {str(e)}")
 
-    # Guess the MIME type
     mimetype = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
-
-    # Return the decrypted file as a stream
     return send_file(
         io.BytesIO(decrypted_data),
         mimetype=mimetype,
         as_attachment=False,
         download_name=filename
     )
+
 @notes_bp.route("/verify_email_for_reset/<int:note_id>", methods=["GET", "POST"])
 @login_required
 def verify_email_for_reset(note_id):
     note = Note.query.get_or_404(note_id)
     if note.user_id != current_user.id:
         abort(403)
-
     if request.method == "POST":
-        # generate OTP
         otp_code = str(random.randint(100000, 999999))
         note.otp_code = otp_code
         note.otp_expiry = datetime.utcnow() + timedelta(minutes=5)
-
-        db.session.commit()  # ✅ Ensure this line is present
-
+        db.session.commit()
         print("Sending OTP:", otp_code)
         from securanote import send_otp
         send_otp(current_user.email, otp_code)
-
-
         return redirect(url_for("notes.verify_otp", note_id=note.id))
-
     return render_template("verify_email.html", note=note)
+
 # ------------------------ Export PDF ------------------------
 @notes_bp.route('/export_pdf', methods=['POST'])
 @login_required
@@ -369,7 +308,6 @@ def export_pdf():
     title = request.form.get('title')
     content = request.form.get('content')
     filename = request.form.get('file_path')
-
     if not title or not content:
         flash("Missing data for PDF export.", "error")
         return redirect(url_for('notes.dashboard'))
@@ -378,11 +316,8 @@ def export_pdf():
     p = canvas.Canvas(buffer)
     p.setTitle(f"{title}.pdf")
 
-    # Title
     p.setFont("Helvetica-Bold", 16)
     p.drawString(50, 800, title)
-
-    # Content
     p.setFont("Helvetica", 12)
     y = 780
     for line in content.splitlines():
@@ -393,30 +328,21 @@ def export_pdf():
         p.drawString(50, y, line)
         y -= 15
 
-    # Try adding image if file exists
     if filename:
         ext = filename.rsplit('.', 1)[-1].lower()
         note = Note.query.filter_by(file_path=filename, user_id=current_user.id).first()
-
         if note:
-            # Download encrypted file from S3
             encrypted_data = download_file_from_s3(filename)
             if not encrypted_data:
                 flash("Failed to fetch file from S3.", "error")
                 return redirect(url_for("notes.view_note", note_id=note.id))
-
-            # Decrypt file
             try:
                 if note.encryption_type == 'AES':
                     decrypted_data = fernet.decrypt(encrypted_data)
                 elif note.encryption_type == 'ChaCha':
                     decrypted_data = decrypt_chacha_bytes(encrypted_data)
                 elif note.encryption_type == 'Blowfish':
-    # For text
-                    decrypted = decrypt_blowfish(note.encrypted_content)
-
-    # For file
-                    decrypted_data = decrypt_blowfish_bytes(encrypted_data)
+                    decrypted_data = decrypt_blowfish_bytes(encrypted_data, blowfish_key)
                 else:
                     flash("Unsupported encryption type.", "error")
                     return redirect(url_for("notes.view_note", note_id=note.id))
@@ -424,7 +350,6 @@ def export_pdf():
                 flash(f"Decryption failed: {e}", "error")
                 return redirect(url_for("notes.view_note", note_id=note.id))
 
-            # If image, embed into PDF
             if ext in ['jpg', 'jpeg', 'png']:
                 try:
                     image = Image.open(io.BytesIO(decrypted_data))
@@ -432,27 +357,21 @@ def export_pdf():
                     temp_img = io.BytesIO()
                     image.save(temp_img, format='JPEG')
                     temp_img.seek(0)
-
                     img_reader = ImageReader(temp_img)
                     iw, ih = img_reader.getSize()
-
                     max_width = 400
                     if iw > max_width:
                         scale = max_width / iw
                         iw = max_width
                         ih = int(ih * scale)
-
                     y_img = y - ih - 20
                     if y_img < 100:
                         p.showPage()
                         y_img = 700
-
                     p.drawImage(img_reader, 50, y_img, width=iw, height=ih)
                     y = y_img - 20
-
                 except Exception as img_err:
                     flash(f"Image rendering failed: {img_err}", "warning")
-
             elif ext in ['mp3', 'mp4']:
                 y -= 30
                 p.setFont("Helvetica-Oblique", 12)
@@ -460,7 +379,6 @@ def export_pdf():
 
     p.save()
     buffer.seek(0)
-
     return send_file(
         buffer,
         as_attachment=True,
@@ -468,34 +386,23 @@ def export_pdf():
         mimetype='application/pdf'
     )
 
-
-
 @notes_bp.route("/shared/<token>", methods=["GET"])
 def shared_note(token):
     note = Note.query.filter_by(share_token=token).first_or_404()
-
-    # 1. View limit check
     if note.views_left is not None and note.views_left <= 0:
         return "<h3>This note is no longer available (view limit reached).</h3>"
-
-    # 2. Decrypt text content
     try:
         if note.encryption_type == 'AES':
             decrypted = fernet.decrypt(note.encrypted_content.encode()).decode()
         elif note.encryption_type == 'ChaCha':
             decrypted = decrypt_chacha(note.encrypted_content)
         elif note.encryption_type == 'Blowfish':
-    # For text
-            decrypted = decrypt_blowfish(note.encrypted_content)
-
-    # For file
-            decrypted_data = decrypt_blowfish_bytes(encrypted_data)
+            decrypted = decrypt_blowfish(note.encrypted_content, blowfish_key)
         else:
             return "<h3>Unsupported encryption.</h3>"
     except Exception as e:
         return f"<h3>Decryption error: {e}</h3>"
 
-    # 3. File decryption (if present)
     file_url = None
     file_ext = None
     if note.file_path:
@@ -503,8 +410,6 @@ def shared_note(token):
         temp_folder = os.path.join(current_app.root_path, 'static', 'temp')
         os.makedirs(temp_folder, exist_ok=True)
         decrypted_path = os.path.join(temp_folder, note.file_path)
-
-        # Skip re-decryption if already exists
         if not os.path.exists(decrypted_path):
             encrypted_data = download_file_from_s3(note.file_path)
             if encrypted_data:
@@ -514,19 +419,15 @@ def shared_note(token):
                     elif note.encryption_type == 'ChaCha':
                         decrypted_data = decrypt_chacha_bytes(encrypted_data)
                     elif note.encryption_type == 'Blowfish':
-                        decrypted_data = decrypt_blowfish_bytes(encrypted_data)
+                        decrypted_data = decrypt_blowfish_bytes(encrypted_data, blowfish_key)
                     else:
                         return "<h3>Unsupported file encryption.</h3>"
-
                     with open(decrypted_path, 'wb') as f:
                         f.write(decrypted_data)
-
                 except Exception as e:
                     return f"<h3>File decryption error: {e}</h3>"
-
         file_url = url_for('static', filename=f'temp/{note.file_path}')
 
-    # 4. Render note content
     rendered = render_template(
         "shared_note.html",
         note=note,
@@ -534,38 +435,21 @@ def shared_note(token):
         file_url=file_url,
         file_ext=file_ext
     )
-
-    # 5. Bot detection (to prevent view decrement on link preview)
     user_agent = request.headers.get("User-Agent", "").lower()
     preview_bots = ['discordbot', 'facebookexternalhit', 'whatsapp', 'telegrambot', 'twitterbot', 'slackbot']
     is_preview = any(bot in user_agent for bot in preview_bots)
-
-    # 6. View decrement (only for real users)
     if not is_preview and note.views_left is not None:
         note.views_left -= 1
         db.session.commit()
-
     return rendered
 
-# Temporary media serving (non-saved decryption stream)
 @notes_bp.route("/temp_media/<key>/<filename>")
 def serve_temp_media(key, filename):
     decrypted_data = session.get(key)
     if not decrypted_data:
         abort(404)
-
-    # Remove the key so file is only viewable once per page load
     session.pop(key)
-
-    # Infer MIME type
-    mime_type = "application/octet-stream"
-    if filename.endswith(".mp3"):
-        mime_type = "audio/mpeg"
-    elif filename.endswith(".mp4"):
-        mime_type = "video/mp4"
-    elif filename.endswith(".pdf"):
-        mime_type = "application/pdf"
-
+    mime_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
     return current_app.response_class(decrypted_data, mimetype=mime_type)
 
 # ------------------------ Edit Note (PIN Protected) ------------------------
@@ -575,7 +459,6 @@ def verify_edit_pin(note_id):
     note = Note.query.get_or_404(note_id)
     if note.user_id != current_user.id:
         abort(403)
-
     if request.method == "POST":
         entered_pin = request.form.get("pin")
         if check_password_hash(note.pin_hash, entered_pin):
@@ -591,20 +474,15 @@ def verify_edit_pin(note_id):
 @login_required
 def edit_note(note_id):
     note = Note.query.get_or_404(note_id)
-
     if note.user_id != current_user.id:
         abort(403)
-
     if request.method == 'POST':
         title = request.form.get('title')
         content = request.form.get('content')
         encryption_type = request.form.get('encryption_type')
-
         if not title or not content:
             flash('Title and content are required.', 'error')
             return redirect(url_for('notes.edit_note', note_id=note_id))
-
-        # Encrypt based on selected method
         try:
             if encryption_type == 'AES':
                 encrypted = fernet.encrypt(content.encode()).decode()
@@ -618,30 +496,25 @@ def edit_note(note_id):
         except Exception as e:
             flash(f'Encryption error: {str(e)}', 'error')
             return redirect(url_for('notes.edit_note', note_id=note_id))
-
-        # Update the note
         note.title = title
         note.encrypted_content = encrypted
         note.encryption_type = encryption_type
         note.timestamp = datetime.utcnow()
-
         try:
             db.session.commit()
             flash('Note updated successfully!', 'success')
         except Exception as e:
             db.session.rollback()
             flash(f'Failed to update note: {str(e)}', 'error')
-
         return redirect(url_for('notes.view_note', note_id=note.id))
 
-    # Decrypt the note content for display
     try:
         if note.encryption_type == 'AES':
             decrypted_content = fernet.decrypt(note.encrypted_content.encode()).decode()
         elif note.encryption_type == 'ChaCha':
             decrypted_content = decrypt_chacha(note.encrypted_content)
         elif note.encryption_type == 'Blowfish':
-            decrypted_content = decrypt_blowfish(note.encrypted_content)
+            decrypted_content = decrypt_blowfish(note.encrypted_content, blowfish_key)
         else:
             decrypted_content = ""
     except Exception as e:
@@ -656,15 +529,12 @@ def verify_otp(note_id):
     note = Note.query.get_or_404(note_id)
     if note.user_id != current_user.id:
         abort(403)
-
     if request.method == "POST":
         otp_input = request.form.get("otp")
         if str(note.otp_code) == str(otp_input) and note.otp_expiry > datetime.utcnow():
-
             return redirect(url_for("notes.reset_pin", note_id=note.id))
         else:
             flash("Invalid or expired OTP", "danger")
-
     return render_template("verify_otp.html", note=note)
 
 @notes_bp.route("/note/<int:note_id>/reset-pin", methods=["GET", "POST"])
@@ -673,7 +543,6 @@ def reset_pin(note_id):
     note = Note.query.get_or_404(note_id)
     if note.user_id != current_user.id:
         abort(403)
-
     if request.method == "POST":
         new_pin = request.form.get("new_pin")
         note.pin_hash = generate_password_hash(new_pin)
@@ -681,29 +550,23 @@ def reset_pin(note_id):
         note.otp_code = None
         note.otp_expiry = None
         db.session.commit()
-    
-
         flash("PIN reset successful. You can now access your note.", "success")
         return redirect(url_for("notes.view_note", note_id=note.id))
-
     return render_template("reset_pin.html", note=note)
+
 @notes_bp.route("/note/<int:note_id>/resend-otp", methods=["POST"])
 @login_required
 def resend_otp(note_id):
     note = Note.query.get_or_404(note_id)
     if note.user_id != current_user.id:
         abort(403)
-
     otp_code = str(random.randint(100000, 999999))
     note.otp_code = otp_code
     note.otp_expiry = datetime.utcnow() + timedelta(minutes=5)
     db.session.commit()
-
     send_otp_email(current_user.email, otp_code)
     flash("A new OTP has been sent to your email.", "info")
     return redirect(url_for("notes.verify_otp", note_id=note.id))
-
-
 
 # ------------------------ Delete Note ------------------------
 @notes_bp.route('/delete_note/<int:note_id>', methods=['POST'])
@@ -713,7 +576,6 @@ def delete_note(note_id):
     if note.user_id != current_user.id:
         flash('Unauthorized action', 'error')
         return redirect(url_for('notes.dashboard'))
-
     db.session.delete(note)
     db.session.commit()
     flash('Note deleted.', 'success')
