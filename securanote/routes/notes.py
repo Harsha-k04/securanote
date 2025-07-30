@@ -247,7 +247,7 @@ def view_note(note_id):
             elif note.encryption_type == 'ChaCha':
                 decrypted_data = decrypt_chacha_bytes(encrypted_data)
             elif note.encryption_type == 'Blowfish':
-                decrypted_data = decrypt_Blowfish_bytes(encrypted_data)
+                decrypted_data = decrypt_blowfish_bytes(encrypted_data)
             else:
                 flash("Unsupported file encryption type.", "danger")
                 return render_template("view_note.html", note=note, decrypted=decrypted)
@@ -321,7 +321,7 @@ def view_file(filename):
         elif note.encryption_type == 'ChaCha':
             decrypted_data = decrypt_chacha_bytes(encrypted_data)
         elif note.encryption_type == 'Blowfish':
-            decrypted_data = decrypt_Blowfish_bytes(encrypted_data)
+            decrypted_data = decrypt_blowfish_bytes(encrypted_data)
         else:
             abort(400, description="Unsupported encryption type.")
 
@@ -415,7 +415,7 @@ def export_pdf():
                     decrypted = decrypt_Blowfish(note.encrypted_content)
 
     # For file
-                    decrypted_data = decrypt_Blowfish_bytes(encrypted_data)
+                    decrypted_data = decrypt_blowfish_bytes(encrypted_data)
                 else:
                     flash("Unsupported encryption type.", "error")
                     return redirect(url_for("notes.view_note", note_id=note.id))
@@ -488,7 +488,7 @@ def shared_note(token):
             decrypted = decrypt_Blowfish(note.encrypted_content)
 
     # For file
-            decrypted_data = decrypt_Blowfish_bytes(encrypted_data)
+            decrypted_data = decrypt_blowfish_bytes(encrypted_data)
         else:
             return "<h3>Unsupported encryption.</h3>"
     except Exception as e:
@@ -513,7 +513,7 @@ def shared_note(token):
                     elif note.encryption_type == 'ChaCha':
                         decrypted_data = decrypt_chacha_bytes(encrypted_data)
                     elif note.encryption_type == 'Blowfish':
-                        decrypted_data = decrypt_Blowfish_bytes(encrypted_data)
+                        decrypted_data = decrypt_blowfish_bytes(encrypted_data)
                     else:
                         return "<h3>Unsupported file encryption.</h3>"
 
