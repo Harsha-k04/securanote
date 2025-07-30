@@ -99,6 +99,7 @@
           <strong class="note-title text-lg">{{ note.title }}</strong>
           <p class="text-sm text-gray-500">Created: {{ note.timestamp|localtime }}</p>
           <p class="text-sm text-gray-500">Encrypted with: {{ note.encryption_type }}</p>
+          {#
           {% if note.file_path %}
             {% set file_url = url_for('static', filename='uploads/' ~ note.file_path) %}
             {% if note.file_path.endswith('.jpg') or note.file_path.endswith('.png') %}
@@ -107,6 +108,7 @@
               <audio controls class="mt-2"><source src="{{ file_url }}"></audio>
             {% endif %}
           {% endif %}
+          #}
           <div class="flex space-x-2 mt-2">
             <form action="{{ url_for('notes.view_note', note_id=note.id) }}" method="GET">
               <button class="bg-blue-500 text-white px-3 py-1 rounded">View</button>
