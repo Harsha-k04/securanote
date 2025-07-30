@@ -82,9 +82,9 @@ def encrypt_content(content: str, encryption_type: str) -> str:
     elif encryption_type == 'ChaCha':
         return encrypt_chacha(content.encode())
     elif encryption_type == 'Blowfish':
-        if not user_blowfish_key:
-            raise ValueError("Blowfish encryption requires user-specific key.")
-        return encrypt_blowfish(content.encode(), user_blowfish_key.encode())
+        if not blowfish_key:
+            raise ValueError("Blowfish encryption key not loaded.")
+        return encrypt_blowfish(content.encode(), blowfish_key)
     else:
         raise ValueError("Unsupported encryption type.")
 
@@ -101,9 +101,9 @@ def decrypt_content(encrypted_content: str, encryption_type: str) -> str:
     elif encryption_type == 'ChaCha':
         return decrypt_chacha(encrypted_content)
     elif encryption_type == 'Blowfish':
-        if not user_blowfish_key:
+        if not blowfish_key:
             raise ValueError("Blowfish decryption requires user-specific key.")
-        return decrypt_blowfish(encrypted_content, user_blowfish_key.encode())
+        return decrypt_blowfish(encrypted_content, blowfish_key.encode())
     else:
         raise ValueError("Unsupported encryption type.")
 
