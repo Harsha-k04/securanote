@@ -165,6 +165,8 @@ def decrypt_blowfish(enc_data: str, key: bytes) -> str:
     cipher = Blowfish.new(key, Blowfish.MODE_CBC, iv)
     decrypted = unpad(cipher.decrypt(ciphertext), BLOWFISH_BLOCK_SIZE)
     return decrypted.decode()
+print("Loaded Blowfish key:", blowfish_key)
+
 
 
 # ----------------------------- #
