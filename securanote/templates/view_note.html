@@ -5,6 +5,11 @@
     <title>SecuraNote - View Note</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link
+          rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
 
     <style>
         @keyframes fadeIn {
@@ -130,17 +135,24 @@
 
             <div class="flex flex-wrap gap-4">
                 <a href="https://wa.me/?text={{ share_link | urlencode }}" target="_blank" class="share-option flex flex-col items-center">
-                    <div class="bg-green-500 text-white p-3 rounded-full">WA</div>
+                  <div class="bg-green-500 text-white p-3 rounded-full">
+                        <i class="fab fa-whatsapp fa-lg"></i>
+                    </div>
                     <span class="text-sm mt-1">WhatsApp</span>
                 </a>
                 <a href="https://t.me/share/url?url={{ share_link | urlencode }}" target="_blank" class="share-option flex flex-col items-center">
-                    <div class="bg-blue-500 text-white p-3 rounded-full">TG</div>
-                    <span class="text-sm mt-1">Telegram</span>
+                  <div class="bg-blue-500 text-white p-3 rounded-full">
+                    <i class="fab fa-telegram fa-lg"></i>
+                  </div>
+                  <span class="text-sm mt-1">Telegram</span>
                 </a>
                 <a href="https://mail.google.com/mail/?view=cm&fs=1&to=&su=Note Shared from Securanote&body={{ share_link | urlencode }}" target="_blank" class="share-option flex flex-col items-center">
-                    <div class="bg-red-500 text-white p-3 rounded-full">📧</div>
-                    <span class="text-sm mt-1">Gmail</span>
+                  <div class="bg-red-500 text-white p-3 rounded-full">
+                    <i class="fas fa-envelope fa-lg"></i>
+                  </div>
+                  <span class="text-sm mt-1">Gmail</span>
                 </a>
+
             </div>
         </div>
         {% endif %}
