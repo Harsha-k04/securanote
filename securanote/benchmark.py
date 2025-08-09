@@ -2,7 +2,7 @@ import os
 import time
 import pandas as pd
 
-# Import your encryption functions from securanote.py
+# Import your encryption functions from utils.py
 from utils import encrypt_note_content, encrypt_chacha, encrypt_blowfish, blowfish_key
 
 # Generate a random AES key for testing (32 bytes = AES-256)
@@ -23,14 +23,22 @@ for filename in os.listdir(TEST_FOLDER):
     with open(file_path, "rb") as f:
         data = f.read()
 
-    size_kb = len(data) / 1024
+    size_mb = len(data) / (1024 * 1024)  # File size in MB
 
     # AES-256 Encryption Timing
     try:
         start = time.perf_counter()
         encrypt_note_content(data.decode(errors="ignore"), aes_key)
         end = time.perf_counter()
-        results.append({"File": filename, "Algorithm": "AES-256", "FileSize_KB": size_kb, "EncryptionTime_s": end - start})
+        elapsed = end - start
+        throughput = size_mb / elapsed if elapsed > 0 else 0
+        results.append({
+            "File": filename,
+            "Algorithm": "AES-256",
+            "FileSize_MB": size_mb,
+            "EncryptionTime_s": elapsed,
+            "Throughput_MBps": throughput
+        })
     except Exception as e:
         print(f"[AES ERROR] {filename}: {e}")
 
@@ -39,7 +47,15 @@ for filename in os.listdir(TEST_FOLDER):
         start = time.perf_counter()
         encrypt_chacha(data)
         end = time.perf_counter()
-        results.append({"File": filename, "Algorithm": "ChaCha20", "FileSize_KB": size_kb, "EncryptionTime_s": end - start})
+        elapsed = end - start
+        throughput = size_mb / elapsed if elapsed > 0 else 0
+        results.append({
+            "File": filename,
+            "Algorithm": "ChaCha20",
+            "FileSize_MB": size_mb,
+            "EncryptionTime_s": elapsed,
+            "Throughput_MBps": throughput
+        })
     except Exception as e:
         print(f"[ChaCha ERROR] {filename}: {e}")
 
@@ -48,7 +64,15 @@ for filename in os.listdir(TEST_FOLDER):
         start = time.perf_counter()
         encrypt_blowfish(data, blowfish_key)
         end = time.perf_counter()
-        results.append({"File": filename, "Algorithm": "Blowfish", "FileSize_KB": size_kb, "EncryptionTime_s": end - start})
+        elapsed = end - start
+        throughput = size_mb / elapsed if elapsed > 0 else 0
+        results.append({
+            "File": filename,
+            "Algorithm": "Blowfish",
+            "FileSize_MB": size_mb,
+            "EncryptionTime_s": elapsed,
+            "Throughput_MBps": throughput
+        })
     except Exception as e:
         print(f"[Blowfish ERROR] {filename}: {e}")
 
@@ -56,5 +80,12 @@ for filename in os.listdir(TEST_FOLDER):
 df = pd.DataFrame(results)
 df.to_csv("encryption_benchmark.csv", index=False)
 
-print("✅ Benchmarking complete! Results saved to encryption_benchmark.csv")
-print(df)
+# Summary Table
+summary = df.groupby("Algorithm").agg({
+    "EncryptionTime_s": "mean",
+    "Throughput_MBps": "mean"
+}).reset_index()
+
+print("✅ Benchmarking complete! Results saved to encryption_benchmark.csv\n")
+print("📊 Summary Table (averages across files):")
+print(summary)
