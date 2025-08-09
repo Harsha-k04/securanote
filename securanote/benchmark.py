@@ -3,7 +3,7 @@ import time
 import pandas as pd
 
 # Import your encryption functions from securanote.py
-from securanote.utils import encrypt_note_content, encrypt_chacha, encrypt_blowfish, blowfish_key
+from utils import encrypt_note_content, encrypt_chacha, encrypt_blowfish, blowfish_key
 
 # Generate a random AES key for testing (32 bytes = AES-256)
 aes_key = os.urandom(32)
