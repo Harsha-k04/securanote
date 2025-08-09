@@ -59,3 +59,4 @@ WTForms==3.2.1
 gunicorn
 qrcode[pil]
 pycryptodome
+pandas
