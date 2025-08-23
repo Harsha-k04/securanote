@@ -34,7 +34,8 @@
       <h2 class="font-semibold text-yellow-700 mb-2">AI Response</h2>
       <p class="whitespace-pre-line">{{ ai_response }}</p>
 
-      <form method="POST" action="{{ url_for('notes.save_ai_note') }}">
+      <!-- FIXED: call ai.save_ai_note instead of notes.save_ai_note -->
+      <form method="POST" action="{{ url_for('ai.save_ai_note') }}">
         <input type="hidden" name="content" value="{{ ai_response }}">
         <input type="text" name="title" placeholder="Enter title to save AI note" class="border rounded p-2 w-full mt-2">
         <button type="submit" class="mt-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Save as Note</button>
