@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Assistant | SecuraNote</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-900 to-blue-500 min-h-screen p-6">
+
+  <div class="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-lg">
+    <h1 class="text-2xl font-bold text-blue-700 mb-4">Virtual Note Assistant</h1>
+
+    <!-- Select Note to Summarize -->
+    <form method="POST">
+      <label class="block text-sm font-medium text-gray-700 mb-2">Choose Note (Optional)</label>
+      <select name="note_id" class="border rounded p-2 w-full mb-4">
+        <option value="">-- Select a note to summarize --</option>
+        {% for note in notes %}
+          <option value="{{ note.id }}">{{ note.title }}</option>
+        {% endfor %}
+      </select>
+
+      <!-- AI Prompt Input -->
+      <label class="block text-sm font-medium text-gray-700 mb-2">Your Query</label>
+      <textarea name="prompt" rows="3" class="border rounded p-2 w-full mb-4" placeholder="Summarize, Generate notes, Highlight key points..."></textarea>
+
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send to AI</button>
+    </form>
+
+    <!-- AI Response -->
+    {% if ai_response %}
+    <div class="mt-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded shadow">
+      <h2 class="font-semibold text-yellow-700 mb-2">AI Response</h2>
+      <p class="whitespace-pre-line">{{ ai_response }}</p>
+
+      <form method="POST" action="{{ url_for('notes.save_ai_note') }}">
+        <input type="hidden" name="content" value="{{ ai_response }}">
+        <input type="text" name="title" placeholder="Enter title to save AI note" class="border rounded p-2 w-full mt-2">
+        <button type="submit" class="mt-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Save as Note</button>
+      </form>
+    </div>
+    {% endif %}
+
+  </div>
+</body>
+</html>
