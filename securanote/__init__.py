@@ -51,7 +51,7 @@ def create_app():
     from securanote.routes.notes import notes_bp
     app.register_blueprint(notes_bp)
 
-    from securanote.ai_routes import ai_bp
+    from securanote.routes.ai_routes import ai_bp
     app.register_blueprint(ai_bp)
 
 
