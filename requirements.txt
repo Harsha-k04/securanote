@@ -60,3 +60,6 @@ gunicorn
 qrcode[pil]
 pycryptodome
 pandas
+openai>=0.27.0
+
+
