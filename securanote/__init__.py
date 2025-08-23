@@ -51,6 +51,10 @@ def create_app():
     from securanote.routes.notes import notes_bp
     app.register_blueprint(notes_bp)
 
+    from securanote.ai_routes import ai_bp
+    app.register_blueprint(ai_bp)
+
+
     @app.template_filter('localtime')
     def localtime_filter(utc_dt):
         if utc_dt is None:
