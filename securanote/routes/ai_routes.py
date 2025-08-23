@@ -1,14 +1,19 @@
 import os
-import openai
 from flask import Blueprint, request, render_template, jsonify, redirect, url_for, flash
 from flask_login import login_required, current_user
 from securanote.models import Note
 from securanote import db
+from openai import OpenAI
 
 # ==============================
 # Blueprint
 # ==============================
 ai_bp = Blueprint("ai", __name__, url_prefix="/ai")
+
+# ==============================
+# OpenAI Client
+# ==============================
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # ==============================
 # AI Utilities
@@ -17,12 +22,10 @@ def local_ai_generate(prompt):
     """Fallback AI generation (local placeholder)"""
     return f"Local AI response: {prompt[:100]}..."
 
-# OpenAI API setup
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
 def openai_generate(prompt, max_tokens=300):
+    """Generate text using OpenAI API"""
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=max_tokens
@@ -33,12 +36,14 @@ def openai_generate(prompt, max_tokens=300):
         return local_ai_generate(prompt)
 
 def generate_summary(note_text):
+    """Generate a concise summary of a note"""
     if len(note_text) > 3000:
         note_text = note_text[:3000] + " ...[truncated]"
     prompt = f"Summarize this note into concise points:\n{note_text}"
     return openai_generate(prompt)
 
 def generate_notes(topic):
+    """Generate notes based on a topic"""
     prompt = f"Generate notes on the topic: {topic}"
     return openai_generate(prompt)
 
@@ -85,15 +90,16 @@ def save_ai_note():
         flash("Title and content are required to save the note.", "error")
         return redirect(url_for("ai.assistant"))
 
-    # Save as encrypted note placeholder (implement encryption as needed)
+    # Save AI response as a note (encryption placeholder)
     new_note = Note(
         user_id=current_user.id,
         title=title,
         encrypted_content=content,
         encryption_type="AES",  # default encryption
-        pin_hash="0000"  # placeholder PIN, implement securely
+        pin_hash="0000"  # placeholder PIN
     )
     db.session.add(new_note)
     db.session.commit()
+
     flash("AI-generated note saved successfully!", "success")
     return redirect(url_for("ai.assistant"))
