@@ -3,7 +3,9 @@ from flask import Blueprint, request, render_template, jsonify, redirect, url_fo
 from flask_login import login_required, current_user
 from securanote.models import Note
 from securanote import db
-from openai import OpenAI
+
+# Use classic OpenAI import for reliability
+import openai
 
 # ==============================
 # Blueprint
@@ -11,9 +13,9 @@ from openai import OpenAI
 ai_bp = Blueprint("ai", __name__, url_prefix="/ai")
 
 # ==============================
-# OpenAI Client
+# OpenAI Client Setup
 # ==============================
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # ==============================
 # AI Utilities
@@ -23,9 +25,13 @@ def local_ai_generate(prompt):
     return f"Local AI response: {prompt[:100]}..."
 
 def openai_generate(prompt, max_tokens=300):
-    """Generate text using OpenAI API"""
+    """Generate text using OpenAI API with fallback"""
+    if not openai.api_key:
+        print("OpenAI API key missing, using local AI.")
+        return local_ai_generate(prompt)
+
     try:
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=max_tokens
