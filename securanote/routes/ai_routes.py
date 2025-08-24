@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 from securanote.models import Note
 from securanote import db
 
-# Use classic OpenAI import for reliability
+# Classic OpenAI import
 import openai
 
 # ==============================
@@ -22,14 +22,13 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 # ==============================
 def local_ai_generate(prompt):
     """Fallback AI generation (local placeholder)"""
-    return f"Local AI response: {prompt[:100]}..."
+    return f"Local AI response: {prompt[:300]}..."  # show more content
 
 def openai_generate(prompt, max_tokens=300):
     """Generate text using OpenAI API with fallback"""
     if not openai.api_key:
         print("OpenAI API key missing, using local AI.")
         return local_ai_generate(prompt)
-
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -46,12 +45,12 @@ def generate_summary(note_text):
     if len(note_text) > 3000:
         note_text = note_text[:3000] + " ...[truncated]"
     prompt = f"Summarize this note into concise points:\n{note_text}"
-    return openai_generate(prompt)
+    return openai_generate(prompt, max_tokens=500)
 
 def generate_notes(topic):
     """Generate notes based on a topic"""
-    prompt = f"Generate notes on the topic: {topic}"
-    return openai_generate(prompt)
+    prompt = f"Generate detailed notes on the topic: {topic}"
+    return openai_generate(prompt, max_tokens=500)
 
 # ==============================
 # AI Assistant Route
@@ -75,7 +74,7 @@ def assistant():
 
         return jsonify({"response": ai_response})
 
-    # --- Fallback: normal page render (old ai_assistant.html) ---
+    # --- Fallback: render old ai_assistant.html if needed ---
     notes = Note.query.filter_by(user_id=current_user.id).all()
     ai_response = None
 
@@ -109,17 +108,18 @@ def save_ai_note():
 
     if not title or not content:
         flash("Title and content are required to save the note.", "error")
-        return redirect(url_for("ai.assistant"))
+        return redirect(url_for("notes.dashboard"))
 
+    # Save AI-generated note as a normal note
     new_note = Note(
         user_id=current_user.id,
         title=title,
         encrypted_content=content,
-        encryption_type="AES",  # default encryption
-        pin_hash="0000"  # placeholder PIN
+        encryption_type="AES",  # default; user can edit later
+        pin_hash="0000"  # placeholder PIN; user can edit later
     )
     db.session.add(new_note)
     db.session.commit()
 
     flash("AI-generated note saved successfully!", "success")
-    return redirect(url_for("ai.assistant"))
+    return redirect(url_for("notes.dashboard"))
