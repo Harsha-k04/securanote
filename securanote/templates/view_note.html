@@ -5,18 +5,11 @@
     <title>SecuraNote - View Note</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
         }
         .note-container {
             background: rgba(255, 255, 255, 0.95);
@@ -72,7 +65,7 @@
             <h2 class="font-semibold text-yellow-700 mb-2">AI Assistant</h2>
             <textarea id="aiPrompt" class="w-full p-2 rounded border border-yellow-300 mb-2" rows="3" placeholder="Type your question or request here..."></textarea>
             <button id="aiGenerateBtn" class="btn-primary px-4 py-2 rounded-lg text-white font-medium mb-2">Generate Response</button>
-            <div id="aiResponse" class="mt-2">
+            <div id="aiResponse" class="mt-2 max-h-96 overflow-auto">
                 <p id="aiText" class="whitespace-pre-line"></p>
             </div>
             <form id="saveAiForm" method="POST" action="{{ url_for('ai.save_ai_note') }}" class="mt-2 hidden">
@@ -87,23 +80,14 @@
         <div class="mt-6 space-y-2">
             <h5 class="text-blue-700 font-semibold">📎 Attached File:</h5>
             {% set ext = note.file_path.rsplit('.', 1)[-1].lower() %}
-            {% if ext in ['png', 'jpg', 'jpeg', 'gif'] %}
+            {% if ext in ['png','jpg','jpeg','gif'] %}
                 <img src="{{ file_url }}" class="rounded shadow-md max-w-xs border" alt="Image preview">
             {% elif ext == 'mp3' %}
-                <audio controls class="mt-2 w-full">
-                    <source src="{{ file_url }}" type="audio/mpeg">
-                    Your browser does not support the audio element.
-                </audio>
-            {% elif ext in ['mp4', 'webm', 'ogg'] and file_url %}
-                <video width="640" height="360" controls class="rounded-lg shadow">
-                    <source src="{{ file_url }}" type="video/{{ file_ext }}">
-                    Your browser does not support the video tag.
-                </video>
+                <audio controls class="mt-2 w-full"><source src="{{ file_url }}" type="audio/mpeg"></audio>
+            {% elif ext in ['mp4','webm','ogg'] and file_url %}
+                <video width="640" height="360" controls class="rounded-lg shadow"><source src="{{ file_url }}" type="video/{{ file_ext }}"></video>
             {% else %}
-                <a href="{{ url_for('notes.view_file', filename=note.file_path) }}" target="_blank"
-                   class="text-blue-600 underline hover:text-blue-800 transition">
-                   Download File
-                </a>
+                <a href="{{ url_for('notes.view_file', filename=note.file_path) }}" target="_blank" class="text-blue-600 underline hover:text-blue-800 transition">Download File</a>
             {% endif %}
         </div>
         {% endif %}
@@ -115,9 +99,7 @@
             {% if note.file_path %}
                 <input type="hidden" name="file_path" value="{{ note.file_path }}">
             {% endif %}
-            <button type="submit" class="btn-primary px-4 py-2 rounded-lg text-white font-medium">
-                Download as PDF
-            </button>
+            <button type="submit" class="btn-primary px-4 py-2 rounded-lg text-white font-medium">Download as PDF</button>
         </form>
 
         <!-- Share Section -->
@@ -128,9 +110,7 @@
                     <input type="checkbox" name="view_once" id="view_once" class="h-4 w-4 text-blue-600 focus:ring-blue-500 rounded">
                     <span class="text-sm text-gray-700">View once only (link expires after first view)</span>
                 </label>
-                <button type="submit" name="generate_link" class="btn-secondary px-4 py-2 rounded-lg text-white font-medium">
-                    Generate Link
-                </button>
+                <button type="submit" name="generate_link" class="btn-secondary px-4 py-2 rounded-lg text-white font-medium">Generate Link</button>
             </form>
         </div>
 
@@ -140,25 +120,18 @@
             <div class="bg-blue-50 border border-blue-100 p-3 rounded-lg flex items-center">
                 <input type="text" class="flex-grow bg-transparent border-none focus:outline-none text-sm" value="{{ share_link }}" readonly onclick="this.select();">
             </div>
-
             <div class="flex flex-wrap gap-4">
                 <a href="https://wa.me/?text={{ share_link | urlencode }}" target="_blank" class="share-option flex flex-col items-center">
-                  <div class="bg-green-500 text-white p-3 rounded-full">
-                        <i class="fab fa-whatsapp fa-lg"></i>
-                    </div>
+                    <div class="bg-green-500 text-white p-3 rounded-full"><i class="fab fa-whatsapp fa-lg"></i></div>
                     <span class="text-sm mt-1">WhatsApp</span>
                 </a>
                 <a href="https://t.me/share/url?url={{ share_link | urlencode }}" target="_blank" class="share-option flex flex-col items-center">
-                  <div class="bg-blue-500 text-white p-3 rounded-full">
-                    <i class="fab fa-telegram fa-lg"></i>
-                  </div>
-                  <span class="text-sm mt-1">Telegram</span>
+                    <div class="bg-blue-500 text-white p-3 rounded-full"><i class="fab fa-telegram fa-lg"></i></div>
+                    <span class="text-sm mt-1">Telegram</span>
                 </a>
                 <a href="https://mail.google.com/mail/?view=cm&fs=1&to=&su=Note Shared from Securanote&body={{ share_link | urlencode }}" target="_blank" class="share-option flex flex-col items-center">
-                  <div class="bg-red-500 text-white p-3 rounded-full">
-                    <i class="fas fa-envelope fa-lg"></i>
-                  </div>
-                  <span class="text-sm mt-1">Gmail</span>
+                    <div class="bg-red-500 text-white p-3 rounded-full"><i class="fas fa-envelope fa-lg"></i></div>
+                    <span class="text-sm mt-1">Gmail</span>
                 </a>
             </div>
         </div>
@@ -170,16 +143,12 @@
             <h4 class="text-blue-700 font-semibold">📷 QR Code</h4>
             <img src="data:image/png;base64,{{ qr_code_base64 }}" alt="QR Code" class="max-w-[200px] rounded shadow">
             <div class="space-x-3 mt-3">
-                <a href="https://mail.google.com/mail/?view=cm&fs=1&to=&su=QR%20Code%20for%20Your%20Note&body=Hi,%0A%0AHere%20is%20the%20QR%20code%20for%20accessing%20my%20note:%0A{{ qr_image_url | urlencode }}%0A%0AScan%20it%20to%20view%20the%20note.%0A"
-                   target="_blank"
-                   class="btn-secondary px-3 py-2 rounded-lg text-white text-sm">Share via Gmail</a>
-                <a href="data:image/png;base64,{{ qr_code_base64 }}" download="qr_code.png"
-                   class="btn-primary px-3 py-2 rounded-lg text-white text-sm">Download QR</a>
+                <a href="https://mail.google.com/mail/?view=cm&fs=1&to=&su=QR%20Code%20for%20Your%20Note&body=Hi,%0A%0AHere%20is%20the%20QR%20code%20for%20accessing%20my%20note:%0A{{ qr_image_url | urlencode }}%0A%0AScan%20it%20to%20view%20the%20note.%0A" target="_blank" class="btn-secondary px-3 py-2 rounded-lg text-white text-sm">Share via Gmail</a>
+                <a href="data:image/png;base64,{{ qr_code_base64 }}" download="qr_code.png" class="btn-primary px-3 py-2 rounded-lg text-white text-sm">Download QR</a>
             </div>
             <p class="text-sm text-gray-500 mt-2">To share via WhatsApp or Telegram, download the QR image and upload manually.</p>
         </div>
         {% endif %}
-
     </div>
 
 <script>
@@ -194,6 +163,9 @@ const saveAiForm = document.getElementById("saveAiForm");
 aiBtn.addEventListener("click", () => {
     aiPromptSection.classList.toggle("hidden");
     aiText.innerText = "";
+    if(!aiPromptSection.classList.contains("hidden")) {
+        aiPromptSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
 });
 
 aiGenerateBtn.addEventListener("click", async () => {
@@ -205,15 +177,16 @@ aiGenerateBtn.addEventListener("click", async () => {
         const res = await fetch("{{ url_for('ai.assistant') }}", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt })
+            body: JSON.stringify({ content: prompt, action: "summarize" })
         });
         const data = await res.json();
         aiText.innerText = data.response || "⚠️ No response from AI.";
 
-        // Prepare form to save AI note
+        // Prepare form to save AI note (user saves manually)
         aiNoteTitle.value = "AI Generated Note";
         aiNoteContent.value = data.response || "";
         saveAiForm.classList.remove("hidden");
+        saveAiForm.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (err) {
         aiText.innerText = "❌ Error contacting AI Assistant.";
     }
