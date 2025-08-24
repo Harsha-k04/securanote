@@ -66,9 +66,10 @@
             <a href="{{ url_for('notes.dashboard') }}" class="btn-secondary px-4 py-2 rounded-lg text-white font-medium flex items-center">
                 ← Back to Dashboard
             </a>
-            <a href="{{ url_for('ai.assistant') }}" class="btn-primary px-4 py-2 rounded-lg text-white font-medium">
-            🤖AI Assistant
-            </a>
+            <button id="aiAssistantBtn" class="btn-primary px-4 py-2 rounded-lg text-white font-medium">
+            🤖 AI Assistant
+            </button>
+
         </div>
 
         <!-- Note Title and Content -->
@@ -76,6 +77,12 @@
             <h2 class="text-xl font-semibold text-blue-700 border-b border-blue-200 pb-2">{{ note.title }}</h2>
             <p class="text-gray-800 whitespace-pre-line">{{ decrypted }}</p>
         </div>
+        <!-- AI Response Section -->
+        <div id="aiResponse" class="mt-6 hidden bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded shadow">
+          <h2 class="font-semibold text-yellow-700 mb-2">AI Response</h2>
+          <p id="aiText" class="whitespace-pre-line"></p>
+        </div>
+
 
         <!-- Attached File -->
         {% if note.file_path %}
@@ -180,5 +187,29 @@
         {% endif %}
 
     </div>
+<script>
+document.getElementById("aiAssistantBtn").addEventListener("click", async () => {
+    const noteContent = `{{ decrypted|safe }}`;
+    const responseDiv = document.getElementById("aiResponse");
+    const responseText = document.getElementById("aiText");
+
+    responseDiv.classList.remove("hidden");
+    responseText.innerText = "🤖 Thinking...";
+
+    try {
+        const res = await fetch("{{ url_for('ai.assistant') }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: noteContent })
+        });
+
+        const data = await res.json();
+        responseText.innerText = data.response || "⚠️ No response from AI.";
+    } catch (err) {
+        responseText.innerText = "❌ Error contacting AI Assistant.";
+    }
+});
+</script>
+
 </body>
 </html>
