@@ -53,6 +53,23 @@ def generate_notes(topic):
 @ai_bp.route("/assistant", methods=["GET", "POST"])
 @login_required
 def assistant():
+    # --- Handle AJAX/JSON request from view_note.html ---
+    if request.is_json:
+        data = request.get_json()
+        content = data.get("content", "")
+        action = data.get("action", "summarize")  # default to summarize
+
+        try:
+            if action == "summarize":
+                ai_response = generate_summary(content)
+            else:
+                ai_response = generate_notes(content)
+        except Exception as e:
+            ai_response = f"Error: {e}"
+
+        return jsonify({"response": ai_response})
+
+    # --- Fallback: normal page render (old ai_assistant.html) ---
     notes = Note.query.filter_by(user_id=current_user.id).all()
     ai_response = None
 
@@ -60,13 +77,11 @@ def assistant():
         note_id = request.form.get("note_id")
         prompt = request.form.get("prompt", "")
 
-        # If user selected a note, prepend its content
         if note_id:
             note = Note.query.filter_by(id=note_id, user_id=current_user.id).first()
             if note:
                 prompt = f"{note.encrypted_content}\n\nUser Query: {prompt}"
 
-        # Call AI
         try:
             if "summarize" in prompt.lower():
                 ai_response = generate_summary(prompt)
@@ -90,7 +105,6 @@ def save_ai_note():
         flash("Title and content are required to save the note.", "error")
         return redirect(url_for("ai.assistant"))
 
-    # Save AI response as a note (encryption placeholder)
     new_note = Note(
         user_id=current_user.id,
         title=title,
