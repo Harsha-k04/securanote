@@ -5,11 +5,7 @@ from securanote.models import Note
 from securanote import db
 from dotenv import load_dotenv
 load_dotenv()
-
-
-
-# Classic OpenAI import
-import openai
+from openai import OpenAI
 
 # ==============================
 # Blueprint
@@ -19,7 +15,8 @@ ai_bp = Blueprint("ai", __name__, url_prefix="/ai")
 # ==============================
 # OpenAI Client Setup
 # ==============================
-openai.api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 print("OpenAI API Key:", openai.api_key)
 
 
@@ -31,12 +28,8 @@ def local_ai_generate(prompt):
     return f"Local AI response: {prompt[:300]}..."  # show more content
 
 def openai_generate(prompt, max_tokens=300):
-    """Generate text using OpenAI API with fallback"""
-    if not openai.api_key:
-        print("OpenAI API key missing, using local AI.")
-        return local_ai_generate(prompt)
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=max_tokens
