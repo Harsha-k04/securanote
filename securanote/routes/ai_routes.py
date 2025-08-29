@@ -17,7 +17,7 @@ ai_bp = Blueprint("ai", __name__, url_prefix="/ai")
 # ==============================
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-print("OpenAI API Key:", openai.api_key)
+print("OpenAI API Key:", client)
 
 
 # ==============================
