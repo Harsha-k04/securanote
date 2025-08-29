@@ -3,6 +3,10 @@ from flask import Blueprint, request, render_template, jsonify, redirect, url_fo
 from flask_login import login_required, current_user
 from securanote.models import Note
 from securanote import db
+from dotenv import load_dotenv
+load_dotenv()
+
+
 
 # Classic OpenAI import
 import openai
