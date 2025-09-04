@@ -4,12 +4,8 @@ from datetime import datetime
 from flask import Blueprint, request, render_template, jsonify, redirect, url_for, flash
 from flask_login import login_required, current_user
 import requests
-import certifi
-import ssl
-from requests.adapters import HTTPAdapter
-from urllib3.poolmanager import PoolManager
-import time
 import logging
+import time
 
 from securanote.models import Note
 from securanote import supabase
@@ -26,33 +22,21 @@ logger = logging.getLogger(__name__)
 ai_bp = Blueprint("ai", __name__, url_prefix="/ai")
 
 # ==============================
-# Grok API Setup
+# Gemini API Setup
 # ==============================
-GROK_API_KEY = os.environ.get("GROK_API_KEY")
-if not GROK_API_KEY:
-    logger.error("GROK_API_KEY not found in environment. Set it in your venv before running.")
-    raise RuntimeError("Missing GROK_API_KEY")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    logger.error("GEMINI_API_KEY not found in environment. Set it in your venv before running.")
+    raise RuntimeError("Missing GEMINI_API_KEY")
 
-GROK_API_URL = "https://api.x.ai/v1/chat/completions"
-
-# TLS Adapter to enforce modern TLS versions
-class TLSAdapter(HTTPAdapter):
-    def init_poolmanager(self, *args, **kwargs):
-        ctx = ssl.create_default_context()
-        ctx.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
-        kwargs['ssl_context'] = ctx
-        return super().init_poolmanager(*args, **kwargs)
-
-# Requests session with TLS adapter
-session = requests.Session()
-session.mount("https://", TLSAdapter())
+GEMINI_API_URL = "https://api.gemini.com/v1/ai/chat/completions"  # Update if endpoint differs
 
 # ==============================
-# Grok Generate with Retry
+# Gemini Generate with Retry
 # ==============================
-def grok_generate(prompt, model="grok-4-latest", max_tokens=500, retries=3, backoff=2):
+def gemini_generate(prompt, model="gemini-1.5", max_tokens=500, retries=3, backoff=2):
     headers = {
-        "Authorization": f"Bearer {GROK_API_KEY}",
+        "Authorization": f"Bearer {GEMINI_API_KEY}",
         "Content-Type": "application/json"
     }
     payload = {
@@ -64,32 +48,23 @@ def grok_generate(prompt, model="grok-4-latest", max_tokens=500, retries=3, back
     attempt = 0
     while attempt < retries:
         try:
-            response = session.post(
-                GROK_API_URL,
-                json=payload,
-                headers=headers,
-                verify=certifi.where()
-            )
+            response = requests.post(GEMINI_API_URL, json=payload, headers=headers)
             if response.status_code == 200:
                 data = response.json()
+                # Adjust this key access if Gemini’s response format differs
                 return data["choices"][0]["message"]["content"].strip()
             else:
-                logger.error(f"Grok API Error {response.status_code}: {response.text}")
-                return f"Grok API Error {response.status_code}: {response.text}"
-
-        except requests.exceptions.SSLError as ssl_err:
-            attempt += 1
-            logger.warning(f"SSL Error (attempt {attempt}/{retries}): {ssl_err}")
-            time.sleep(backoff ** attempt)
+                logger.error(f"Gemini API Error {response.status_code}: {response.text}")
+                return f"Gemini API Error {response.status_code}: {response.text}"
         except requests.exceptions.RequestException as req_err:
             attempt += 1
             logger.warning(f"Request Error (attempt {attempt}/{retries}): {req_err}")
             time.sleep(backoff ** attempt)
         except Exception as e:
-            logger.error(f"Grok API Exception: {e}")
-            return f"Grok API Exception: {e}"
+            logger.error(f"Gemini API Exception: {e}")
+            return f"Gemini API Exception: {e}"
 
-    return f"Grok API failed after {retries} attempts."
+    return f"Gemini API failed after {retries} attempts."
 
 # ==============================
 # AI Utilities
@@ -98,11 +73,11 @@ def generate_summary(note_text):
     if len(note_text) > 3000:
         note_text = note_text[:3000] + " ...[truncated]"
     prompt = f"Summarize this note into concise points:\n{note_text}"
-    return grok_generate(prompt, max_tokens=500)
+    return gemini_generate(prompt, max_tokens=500)
 
 def generate_notes(topic):
     prompt = f"Generate detailed notes on the topic: {topic}"
-    return grok_generate(prompt, max_tokens=500)
+    return gemini_generate(prompt, max_tokens=500)
 
 # ==============================
 # AI Assistant Route
