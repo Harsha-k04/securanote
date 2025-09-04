@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import requests
 from securanote.models import Note  # Keep this for type/structure if needed
 from securanote import supabase  # Make sure your Supabase client is imported here
-
+import certifi
 load_dotenv()
 
 # ==============================
@@ -33,12 +33,19 @@ def grok_generate(prompt, model="grok-4", max_tokens=500):
     }
 
     try:
-        response = requests.post(GROK_API_URL, json=payload, headers=headers)
+        response = requests.post(
+            GROK_API_URL,
+            json=payload,
+            headers=headers,
+            verify=certifi.where()  # Ensures SSL certificates are trusted
+        )
         if response.status_code == 200:
             data = response.json()
             return data["choices"][0]["message"]["content"].strip()
         else:
             return f"Grok API Error {response.status_code}: {response.text}"
+    except requests.exceptions.SSLError as ssl_err:
+        return f"SSL Error: {ssl_err}"
     except Exception as e:
         return f"Grok API Exception: {e}"
 
