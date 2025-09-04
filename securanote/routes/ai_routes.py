@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import Blueprint, request, render_template, jsonify, redirect, url_for, flash
 from flask_login import login_required, current_user
 from dotenv import load_dotenv
-from openai import OpenAI
+import requests
 from securanote.models import Note  # Keep this for type/structure if needed
 from securanote import supabase  # Make sure your Supabase client is imported here
 
@@ -16,43 +16,46 @@ load_dotenv()
 ai_bp = Blueprint("ai", __name__, url_prefix="/ai")
 
 # ==============================
-# OpenAI Client Setup
+# Grok API Setup
 # ==============================
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+GROK_API_KEY = os.getenv("GROK_API_KEY")
+GROK_API_URL = "https://api.grok.ai/v1/chat"  # Replace with actual endpoint if different
 
-print("OpenAI API Key:", client)
-print("OPENAI_API_KEY:", os.getenv("OPENAI_API_KEY"))
+def grok_generate(prompt, model="grok-4", max_tokens=500):
+    headers = {
+        "Authorization": f"Bearer {GROK_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": max_tokens
+    }
+
+    try:
+        response = requests.post(GROK_API_URL, json=payload, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            return data["choices"][0]["message"]["content"].strip()
+        else:
+            return f"Grok API Error {response.status_code}: {response.text}"
+    except Exception as e:
+        return f"Grok API Exception: {e}"
 
 # ==============================
 # AI Utilities
 # ==============================
-def local_ai_generate(prompt):
-    """Fallback AI generation (local placeholder)"""
-    return f"Local AI response: {prompt[:300]}..."
-
-def openai_generate(prompt, max_tokens=300):
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=max_tokens
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"OpenAI API failed: {e}")
-        return local_ai_generate(prompt)
-
 def generate_summary(note_text):
-    """Generate a concise summary of a note"""
+    """Generate a concise summary of a note using Grok"""
     if len(note_text) > 3000:
         note_text = note_text[:3000] + " ...[truncated]"
     prompt = f"Summarize this note into concise points:\n{note_text}"
-    return openai_generate(prompt, max_tokens=500)
+    return grok_generate(prompt, max_tokens=500)
 
 def generate_notes(topic):
-    """Generate notes based on a topic"""
+    """Generate notes based on a topic using Grok"""
     prompt = f"Generate detailed notes on the topic: {topic}"
-    return openai_generate(prompt, max_tokens=500)
+    return grok_generate(prompt, max_tokens=500)
 
 # ==============================
 # AI Assistant Route
@@ -60,11 +63,10 @@ def generate_notes(topic):
 @ai_bp.route("/assistant", methods=["GET", "POST"])
 @login_required
 def assistant():
-    # --- Handle AJAX/JSON request from view_note.html ---
     if request.is_json:
         data = request.get_json()
         content = data.get("content", "")
-        action = data.get("action", "summarize")  # default to summarize
+        action = data.get("action", "summarize")
 
         try:
             if action == "summarize":
@@ -76,10 +78,10 @@ def assistant():
 
         return jsonify({"response": ai_response})
 
-    # --- Fetch notes from Supabase ---
+    # Fetch notes from Supabase
     resp = supabase.table("notes").select("*").eq("user_id", current_user.id).execute()
     notes_data = resp.data if resp.data else []
-    notes = [Note.from_dict(n) for n in notes_data]  # assuming your Note model has from_dict
+    notes = [Note.from_dict(n) for n in notes_data]
 
     ai_response = None
 
