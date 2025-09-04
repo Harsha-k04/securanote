@@ -16,6 +16,7 @@ class User(db.Model, UserMixin):
     notes = db.relationship('Note', backref='owner', lazy=True)
     last_ip = db.Column(db.String(45))
     last_login_time = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow) 
 
 
     def __repr__(self):
