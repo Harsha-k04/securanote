@@ -51,18 +51,14 @@ def gemini_generate(prompt, retries=3, backoff=2):
             response = requests.post(GEMINI_API_URL, json=payload, headers=headers)
             if response.status_code == 200:
                 data = response.json()
-                # Safely extract text from candidates -> content -> parts -> text
                 candidate = data.get("candidates", [{}])[0]
-                content_list = candidate.get("content", [])
+                content = candidate.get("content", {})
 
-                if isinstance(content_list, list):
-                    texts = []
-                    for part in content_list:
-                        if isinstance(part, dict) and "text" in part:
-                            texts.append(part["text"])
-                    return "\n".join(texts).strip()
-                else:
-                    return str(content_list).strip()
+                # content is a dict → get parts → extract text
+                parts = content.get("parts", [])
+                texts = [part.get("text", "") for part in parts if "text" in part]
+
+                return "\n".join(texts).strip() if texts else "No response from Gemini."
             else:
                 logger.error(f"Gemini API Error {response.status_code}: {response.text}")
                 return f"Gemini API Error {response.status_code}: {response.text}"
