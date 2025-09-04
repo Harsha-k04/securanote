@@ -129,7 +129,6 @@ def dashboard():
 
 
 # ------------------------ VIEW NOTE ------------------------
-# ------------------------ VIEW NOTE ------------------------
 @notes_bp.route("/note/<int:note_id>/view", methods=["GET", "POST"])
 @login_required
 def view_note(note_id):
@@ -140,15 +139,14 @@ def view_note(note_id):
     if note.user_id != current_user.id:
         abort(403)
 
-    # ------------------ PIN CHECK ------------------
-    pin_session_key = f"pin_used_{note_id}"
     attempt_key = f"pin_attempts_{note_id}"
     session.setdefault(attempt_key, 0)
 
+    # ------------------ PIN CHECK ------------------
     if request.method == "POST" and "pin" in request.form:
         entered_pin = request.form["pin"]
         if check_password_hash(note.pin_hash, entered_pin):
-            session[pin_session_key] = entered_pin
+            # Do NOT save PIN in session (forces re-entry every time)
             session.pop(attempt_key, None)
             flash("PIN verified successfully.", "success")
         else:
@@ -160,8 +158,8 @@ def view_note(note_id):
             flash("Incorrect PIN", "danger")
             return render_template("enter_pin.html", note=note, attempts=attempts)
 
-    elif note.pin_hash and pin_session_key not in session:
-        # PIN required and not yet entered
+    elif note.pin_hash and request.method == "GET":
+        # Always ask for PIN on GET
         return render_template("enter_pin.html", note=note, attempts=session.get(attempt_key, 0))
     # ------------------------------------------------
 
@@ -210,8 +208,6 @@ def view_note(note_id):
         file_ext=file_ext,
         export_pdf_url=export_pdf_url
     )
-
-
 
 # ------------------------ EDIT NOTE ------------------------
 @notes_bp.route("/edit/<int:note_id>/pin", methods=["GET", "POST"])
