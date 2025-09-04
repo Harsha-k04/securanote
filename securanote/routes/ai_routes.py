@@ -9,11 +9,19 @@ import certifi
 import ssl
 from requests.adapters import HTTPAdapter
 from urllib3.poolmanager import PoolManager
+import time
+import logging
 
-from securanote.models import Note  # Keep this for type/structure if needed
-from securanote import supabase  # Make sure your Supabase client is imported here
+from securanote.models import Note
+from securanote import supabase
 
 load_dotenv()
+
+# ==============================
+# Logging Setup
+# ==============================
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # ==============================
 # Blueprint
@@ -24,7 +32,7 @@ ai_bp = Blueprint("ai", __name__, url_prefix="/ai")
 # Grok API Setup
 # ==============================
 GROK_API_KEY = os.getenv("GROK_API_KEY")
-GROK_API_URL = "https://api.grok.ai/v1/chat"  # Replace with actual endpoint if different
+GROK_API_URL = "https://api.grok.ai/v1/chat"
 
 # TLS Adapter to enforce modern TLS versions
 class TLSAdapter(HTTPAdapter):
@@ -38,7 +46,10 @@ class TLSAdapter(HTTPAdapter):
 session = requests.Session()
 session.mount("https://", TLSAdapter())
 
-def grok_generate(prompt, model="grok-4", max_tokens=500):
+# ==============================
+# Grok Generate with Retry
+# ==============================
+def grok_generate(prompt, model="grok-4", max_tokens=500, retries=3, backoff=2):
     headers = {
         "Authorization": f"Bearer {GROK_API_KEY}",
         "Content-Type": "application/json"
@@ -49,35 +60,50 @@ def grok_generate(prompt, model="grok-4", max_tokens=500):
         "max_tokens": max_tokens
     }
 
-    try:
-        response = session.post(
-            GROK_API_URL,
-            json=payload,
-            headers=headers,
-            verify=certifi.where()  # Ensures SSL certificates are trusted
-        )
-        if response.status_code == 200:
-            data = response.json()
-            return data["choices"][0]["message"]["content"].strip()
-        else:
-            return f"Grok API Error {response.status_code}: {response.text}"
-    except requests.exceptions.SSLError as ssl_err:
-        return f"SSL Error: {ssl_err}"
-    except Exception as e:
-        return f"Grok API Exception: {e}"
+    attempt = 0
+    while attempt < retries:
+        try:
+            response = session.post(
+                GROK_API_URL,
+                json=payload,
+                headers=headers,
+                verify=certifi.where()
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return data["choices"][0]["message"]["content"].strip()
+            else:
+                logger.error(f"Grok API Error {response.status_code}: {response.text}")
+                return f"Grok API Error {response.status_code}: {response.text}"
+
+        except requests.exceptions.SSLError as ssl_err:
+            attempt += 1
+            logger.warning(f"SSL Error (attempt {attempt}/{retries}): {ssl_err}")
+            if attempt >= retries:
+                return f"SSL Error after {attempt} attempts: {ssl_err}"
+            time.sleep(backoff ** attempt)
+
+        except requests.exceptions.RequestException as req_err:
+            attempt += 1
+            logger.warning(f"Request Error (attempt {attempt}/{retries}): {req_err}")
+            if attempt >= retries:
+                return f"Request Error after {attempt} attempts: {req_err}"
+            time.sleep(backoff ** attempt)
+
+        except Exception as e:
+            logger.error(f"Grok API Exception: {e}")
+            return f"Grok API Exception: {e}"
 
 # ==============================
 # AI Utilities
 # ==============================
 def generate_summary(note_text):
-    """Generate a concise summary of a note using Grok"""
     if len(note_text) > 3000:
         note_text = note_text[:3000] + " ...[truncated]"
     prompt = f"Summarize this note into concise points:\n{note_text}"
     return grok_generate(prompt, max_tokens=500)
 
 def generate_notes(topic):
-    """Generate notes based on a topic using Grok"""
     prompt = f"Generate detailed notes on the topic: {topic}"
     return grok_generate(prompt, max_tokens=500)
 
@@ -142,7 +168,6 @@ def save_ai_note():
         flash("Title and content are required to save the note.", "error")
         return redirect(url_for("notes.dashboard"))
 
-    # Save AI-generated note to Supabase
     supabase.table("notes").insert({
         "user_id": current_user.id,
         "title": title,
