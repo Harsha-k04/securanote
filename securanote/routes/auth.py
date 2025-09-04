@@ -203,3 +203,15 @@ def resend_reset_otp():
     send_otp(email, otp)
     flash('OTP resent successfully.', 'info')
     return redirect(url_for('auth.verify_reset_otp'))
+    @auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form.get("email")
+        # Optional: check if email exists in Supabase
+        session['reset_email'] = email
+        otp = str(random.randint(100000, 999999))
+        session['reset_otp'] = otp
+        send_otp(email, otp)
+        flash("OTP sent to your email for password reset.", "info")
+        return redirect(url_for('auth.verify_reset_otp'))
+    return render_template('forgot_password.html')
