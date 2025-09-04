@@ -1,5 +1,5 @@
 from datetime import datetime
-from securanote import db
+#from securanote import db
 from flask_login import UserMixin
 from sqlalchemy import LargeBinary
 from werkzeug.security import generate_password_hash, check_password_hash
