@@ -47,8 +47,16 @@ def create_app():
 
     @app.template_filter('localtime')
     def localtime_filter(utc_dt):
-        if utc_dt is None:
+        if not utc_dt:
             return ""
+    
+    # Convert string to datetime if needed
+        if isinstance(utc_dt, str):
+            try:
+                    utc_dt = datetime.fromisoformat(utc_dt)
+            except ValueError:
+                return utc_dt  # fallback: return string as-is if parsing fails
+    
         ist = pytz.timezone('Asia/Kolkata')
         return utc_dt.replace(tzinfo=pytz.utc).astimezone(ist).strftime('%Y-%m-%d %I:%M %p')
 
