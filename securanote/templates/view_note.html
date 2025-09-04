@@ -93,7 +93,8 @@
         {% endif %}
 
         <!-- PDF Export -->
-        <form action="{{ url_for('notes.export_pdf') }}" method="POST" class="mt-6">
+        <!-- PDF Export -->
+        <form action="{{ url_for('notes.export_pdf', note_id=note.id) }}" method="POST" class="mt-6">
             <input type="hidden" name="title" value="{{ note.title }}">
             <textarea name="content" style="display:none;">{{ decrypted }}</textarea>
             {% if note.file_path %}
@@ -101,6 +102,7 @@
             {% endif %}
             <button type="submit" class="btn-primary px-4 py-2 rounded-lg text-white font-medium">Download as PDF</button>
         </form>
+
 
         <!-- Share Section -->
         <div class="mt-10 border-t border-blue-200 pt-6">
