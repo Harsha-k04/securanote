@@ -8,6 +8,8 @@ import os, io, uuid, base64, mimetypes, random, qrcode
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 from PIL import Image
+from email.message import EmailMessage
+import smtplib
 
 from securanote.supabase_client import supabase
 from securanote.models import Note
@@ -31,6 +33,18 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def send_otp_email(to_email, otp_code):
+    msg = EmailMessage()
+    msg.set_content(f"Your Securanote OTP code is: {otp_code}")
+    msg["Subject"] = "Securanote OTP Verification"
+    msg["From"] = "securanote@gmail.com"
+    msg["To"] = to_email
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login("securanote@gmail.com", "nyyq xzom ptoy fgjv")
+        server.send_message(msg)
 
 
 # ------------------------ DASHBOARD & ADD NOTE ------------------------
@@ -89,7 +103,6 @@ def dashboard():
                 flash("Failed to upload encrypted file to cloud.", "error")
                 return redirect(url_for("notes.dashboard"))
 
-        # Create note in Supabase
         note_data = {
             "title": title,
             "encrypted_content": encrypted_content,
@@ -103,7 +116,7 @@ def dashboard():
 
         if request.form.get("share_note") == "yes":
             note_data["share_token"] = uuid.uuid4().hex
-            note_data["views_left"] = 1  # view once only
+            note_data["views_left"] = 1
             note_data["share_expiry"] = None
 
         supabase.table("notes").insert(note_data).execute()
@@ -126,7 +139,6 @@ def view_note(note_id):
     if note.user_id != current_user.id:
         abort(403)
 
-    # PIN session attempts
     attempt_key = f"attempts_note_{note_id}"
     session.setdefault(attempt_key, 0)
 
@@ -145,7 +157,6 @@ def view_note(note_id):
                 flash("Incorrect PIN", "danger")
                 return render_template("enter_pin.html", note=note, attempts=session[attempt_key])
 
-    # Decrypt content
     decrypted = None
     try:
         if note.encryption_type == 'AES':
@@ -157,7 +168,6 @@ def view_note(note_id):
     except Exception:
         flash("Decryption failed", "danger")
 
-    # Decrypt file
     file_url = None
     file_ext = None
     if note.file_path:
@@ -202,7 +212,6 @@ def verify_edit_pin(note_id):
             return redirect(url_for('notes.edit_note', note_id=note_id))
         else:
             flash("Incorrect PIN", "error")
-
     return render_template("verify_edit_pin.html", note=note)
 
 
@@ -223,7 +232,6 @@ def edit_note(note_id):
         if not title or not content:
             flash('Title and content are required.', 'error')
             return redirect(url_for('notes.edit_note', note_id=note_id))
-
         try:
             if encryption_type == 'AES':
                 encrypted = fernet.encrypt(content.encode()).decode()
@@ -244,11 +252,10 @@ def edit_note(note_id):
             "encryption_type": encryption_type,
             "timestamp": datetime.utcnow().isoformat()
         }).eq("id", note_id).execute()
-
         flash('Note updated successfully!', 'success')
         return redirect(url_for('notes.view_note', note_id=note_id))
 
-    # Decrypt for GET
+    decrypted_content = ''
     try:
         if note.encryption_type == 'AES':
             decrypted_content = fernet.decrypt(note.encrypted_content.encode()).decode()
@@ -259,4 +266,216 @@ def edit_note(note_id):
     except Exception:
         decrypted_content = ''
 
-    return render_template("edit_note.html", note=note, content=decrypted_content)
+    return render_template('edit_note.html', note=note, decrypted_content=decrypted_content)
+
+
+# ------------------------ OTP RESET ------------------------
+@notes_bp.route("/verify_email_for_reset/<int:note_id>", methods=["GET", "POST"])
+@login_required
+def verify_email_for_reset(note_id):
+    resp = supabase.table("notes").select("*").eq("id", note_id).execute()
+    if not resp.data:
+        abort(404)
+    note = Note.from_dict(resp.data[0])
+    if note.user_id != current_user.id:
+        abort(403)
+
+    if request.method == "POST":
+        otp_code = str(random.randint(100000, 999999))
+        supabase.table("notes").update({
+            "otp_code": otp_code,
+            "otp_expiry": (datetime.utcnow() + timedelta(minutes=5)).isoformat()
+        }).eq("id", note_id).execute()
+        send_otp(current_user.email, otp_code)
+        return redirect(url_for("notes.verify_otp", note_id=note.id))
+    return render_template("verify_email.html", note=note)
+
+
+@notes_bp.route("/note/<int:note_id>/verify-otp", methods=["GET", "POST"])
+@login_required
+def verify_otp(note_id):
+    resp = supabase.table("notes").select("*").eq("id", note_id).execute()
+    if not resp.data:
+        abort(404)
+    note = Note.from_dict(resp.data[0])
+    if note.user_id != current_user.id:
+        abort(403)
+
+    if request.method == "POST":
+        otp_input = request.form.get("otp")
+        if str(note.otp_code) == str(otp_input) and note.otp_expiry > datetime.utcnow():
+            return redirect(url_for("notes.reset_pin", note_id=note.id))
+        else:
+            flash("Invalid or expired OTP", "danger")
+    return render_template("verify_otp.html", note=note)
+
+
+@notes_bp.route("/note/<int:note_id>/reset-pin", methods=["GET", "POST"])
+@login_required
+def reset_pin(note_id):
+    resp = supabase.table("notes").select("*").eq("id", note_id).execute()
+    if not resp.data:
+        abort(404)
+    note = Note.from_dict(resp.data[0])
+    if note.user_id != current_user.id:
+        abort(403)
+
+    if request.method == "POST":
+        new_pin = request.form.get("new_pin")
+        supabase.table("notes").update({
+            "pin_hash": generate_password_hash(new_pin),
+            "otp_code": None,
+            "otp_expiry": None,
+            "wrong_attempts": 0
+        }).eq("id", note_id).execute()
+        flash("PIN reset successful. You can now access your note.", "success")
+        return redirect(url_for("notes.view_note", note_id=note.id))
+    return render_template("reset_pin.html", note=note)
+
+
+@notes_bp.route("/note/<int:note_id>/resend-otp", methods=["POST"])
+@login_required
+def resend_otp(note_id):
+    otp_code = str(random.randint(100000, 999999))
+    supabase.table("notes").update({
+        "otp_code": otp_code,
+        "otp_expiry": (datetime.utcnow() + timedelta(minutes=5)).isoformat()
+    }).eq("id", note_id).execute()
+    send_otp_email(current_user.email, otp_code)
+    flash("A new OTP has been sent to your email.", "info")
+    return redirect(url_for("notes.verify_otp", note_id=note_id))
+
+# ------------------------ SHARE NOTE (QR CODE) ------------------------
+@notes_bp.route('/note/<int:note_id>/share', methods=['GET'])
+@login_required
+def share_note(note_id):
+    resp = supabase.table("notes").select("*").eq("id", note_id).execute()
+    if not resp.data:
+        abort(404)
+    note = Note.from_dict(resp.data[0])
+    if note.user_id != current_user.id:
+        abort(403)
+
+    if not note.share_token:
+        share_token = uuid.uuid4().hex
+        supabase.table("notes").update({
+            "share_token": share_token,
+            "views_left": 1,
+            "share_expiry": (datetime.utcnow() + timedelta(days=1)).isoformat()
+        }).eq("id", note_id).execute()
+    else:
+        share_token = note.share_token
+
+    share_url = url_for('notes.view_shared_note', token=share_token, _external=True)
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(share_url)
+    qr.make(fit=True)
+    img = qr.make_image(fill='black', back_color='white')
+    buf = io.BytesIO()
+    img.save(buf)
+    buf.seek(0)
+    return send_file(buf, mimetype='image/png', download_name=f'share_qr_{note_id}.png')
+
+
+@notes_bp.route('/shared/<token>', methods=['GET'])
+def view_shared_note(token):
+    resp = supabase.table("notes").select("*").eq("share_token", token).execute()
+    if not resp.data:
+        abort(404)
+    note = Note.from_dict(resp.data[0])
+
+    if note.views_left <= 0 or (note.share_expiry and datetime.fromisoformat(note.share_expiry) < datetime.utcnow()):
+        flash("This shared note has expired or has no remaining views.", "danger")
+        return redirect(url_for('notes.dashboard'))
+
+    # Decrypt content
+    decrypted = ''
+    try:
+        if note.encryption_type == 'AES':
+            decrypted = fernet.decrypt(note.encrypted_content.encode()).decode()
+        elif note.encryption_type == 'ChaCha':
+            decrypted = decrypt_chacha(note.encrypted_content)
+        elif note.encryption_type == 'Blowfish':
+            decrypted = decrypt_blowfish(note.encrypted_content, blowfish_key)
+    except Exception:
+        flash("Failed to decrypt shared note.", "danger")
+
+    # Reduce views_left by 1
+    supabase.table("notes").update({
+        "views_left": note.views_left - 1
+    }).eq("id", note.id).execute()
+
+    return render_template("view_shared_note.html", note=note, decrypted=decrypted)
+
+
+# ------------------------ EXPORT NOTE AS PDF ------------------------
+@notes_bp.route('/note/<int:note_id>/export_pdf', methods=['GET'])
+@login_required
+def export_pdf(note_id):
+    resp = supabase.table("notes").select("*").eq("id", note_id).execute()
+    if not resp.data:
+        abort(404)
+    note = Note.from_dict(resp.data[0])
+    if note.user_id != current_user.id:
+        abort(403)
+
+    # Decrypt content
+    decrypted_content = ''
+    try:
+        if note.encryption_type == 'AES':
+            decrypted_content = fernet.decrypt(note.encrypted_content.encode()).decode()
+        elif note.encryption_type == 'ChaCha':
+            decrypted_content = decrypt_chacha(note.encrypted_content)
+        elif note.encryption_type == 'Blowfish':
+            decrypted_content = decrypt_blowfish(note.encrypted_content, blowfish_key)
+    except Exception:
+        flash("Failed to decrypt note for PDF export.", "danger")
+        return redirect(url_for('notes.view_note', note_id=note_id))
+
+    pdf_buffer = io.BytesIO()
+    c = canvas.Canvas(pdf_buffer)
+    c.setFont("Helvetica", 12)
+    textobject = c.beginText(40, 800)
+    textobject.textLine(f"Title: {note.title}")
+    textobject.textLine(f"Created: {note.timestamp}")
+    textobject.textLine("")
+    for line in decrypted_content.splitlines():
+        textobject.textLine(line)
+    c.drawText(textobject)
+
+    # Include image/file if present
+    if note.file_path:
+        try:
+            encrypted_data = download_file_from_s3(note.file_path)
+            if note.encryption_type == 'AES':
+                decrypted_data = fernet.decrypt(encrypted_data)
+            elif note.encryption_type == 'ChaCha':
+                decrypted_data = decrypt_chacha_bytes(encrypted_data)
+            elif note.encryption_type == 'Blowfish':
+                decrypted_data = decrypt_blowfish_bytes(encrypted_data, blowfish_key)
+            img = Image.open(io.BytesIO(decrypted_data))
+            c.drawInlineImage(ImageReader(img), 50, 400, width=400, height=300)
+        except Exception:
+            pass
+
+    c.showPage()
+    c.save()
+    pdf_buffer.seek(0)
+    return send_file(pdf_buffer, as_attachment=True, download_name=f"{note.title}.pdf", mimetype='application/pdf')
+
+
+# ------------------------ DELETE NOTE ------------------------
+@notes_bp.route('/delete_note/<int:note_id>', methods=['POST'])
+@login_required
+def delete_note(note_id):
+    resp = supabase.table("notes").select("*").eq("id", note_id).execute()
+    if not resp.data:
+        abort(404)
+    note = Note.from_dict(resp.data[0])
+    if note.user_id != current_user.id:
+        flash('Unauthorized action', 'error')
+        return redirect(url_for('notes.dashboard'))
+
+    supabase.table("notes").delete().eq("id", note_id).execute()
+    flash('Note deleted.', 'success')
+    return redirect(url_for('notes.dashboard'))
