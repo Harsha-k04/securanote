@@ -1,48 +1,45 @@
 from datetime import datetime
-#from securanote import db
 from flask_login import UserMixin
-from sqlalchemy import LargeBinary
-from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import DateTime, Integer
 
-class User(db.Model, UserMixin):
-    __tablename__ = 'users'
-
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(150), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    is_verified = db.Column(db.Boolean, default=False)
-    password_hash = db.Column(db.String(256), nullable=False)
-    notes = db.relationship('Note', backref='owner', lazy=True)
-    last_ip = db.Column(db.String(45))
-    last_login_time = db.Column(db.DateTime)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow) 
-
+# -------------------------------
+# User model for Flask-Login (Supabase)
+# -------------------------------
+class User(UserMixin):
+    def __init__(self, id, username, email, is_verified=False, last_ip=None, last_login_time=None, created_at=None):
+        self.id = id
+        self.username = username
+        self.email = email
+        self.is_verified = is_verified
+        self.last_ip = last_ip
+        self.last_login_time = last_login_time
+        self.created_at = created_at or datetime.utcnow()
 
     def __repr__(self):
         return f"<User {self.username}>"
 
-
-class Note(db.Model):
-    __tablename__ = 'notes'
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    title = db.Column(db.String(255), nullable=False)
-    encrypted_content = db.Column(db.Text, nullable=False)
-    encryption_type = db.Column(db.String(20), nullable=False)  # AES or ChaCha
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    pin_hash = db.Column(db.String(255), nullable=False)  # Store hashed PIN securely
-    file_path = db.Column(db.String(255))  # e.g., 'uploads/myphoto.jpg'
-    file_data = db.Column(LargeBinary)
-    share_token = db.Column(db.String(100), unique=True, nullable=True)
-    share_expiry = db.Column(DateTime, nullable=True)
-    views_left = db.Column(Integer, default=0)
-    wrong_attempts = db.Column(db.Integer, default=0)
-    otp_code = db.Column(db.String(6))
-    otp_expiry = db.Column(db.DateTime)
-
-
+# -------------------------------
+# Note model for Supabase
+# -------------------------------
+class Note:
+    def __init__(self, id, user_id, title, encrypted_content, encryption_type, pin_hash,
+                 file_path=None, file_data=None, share_token=None, share_expiry=None,
+                 views_left=0, wrong_attempts=0, otp_code=None, otp_expiry=None,
+                 timestamp=None):
+        self.id = id
+        self.user_id = user_id
+        self.title = title
+        self.encrypted_content = encrypted_content
+        self.encryption_type = encryption_type
+        self.pin_hash = pin_hash
+        self.file_path = file_path
+        self.file_data = file_data
+        self.share_token = share_token
+        self.share_expiry = share_expiry
+        self.views_left = views_left
+        self.wrong_attempts = wrong_attempts
+        self.otp_code = otp_code
+        self.otp_expiry = otp_expiry
+        self.timestamp = timestamp or datetime.utcnow()
 
     def __repr__(self):
         return f"<Note {self.title}>"
