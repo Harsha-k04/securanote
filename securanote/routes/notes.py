@@ -420,7 +420,7 @@ def view_shared_note(token):
 
 
 # ------------------------ EXPORT NOTE AS PDF ------------------------
-@notes_bp.route('/note/<int:note_id>/export_pdf', methods=['GET'])
+@notes_bp.route('/note/<int:note_id>/export_pdf', methods=['GET', 'POST'])
 @login_required
 def export_pdf(note_id):
     resp = supabase.table("notes").select("*").eq("id", note_id).execute()
@@ -443,6 +443,7 @@ def export_pdf(note_id):
         flash("Failed to decrypt note for PDF export.", "danger")
         return redirect(url_for('notes.view_note', note_id=note_id))
 
+    # Create PDF
     pdf_buffer = io.BytesIO()
     c = canvas.Canvas(pdf_buffer)
     c.setFont("Helvetica", 12)
@@ -473,6 +474,7 @@ def export_pdf(note_id):
     c.save()
     pdf_buffer.seek(0)
     return send_file(pdf_buffer, as_attachment=True, download_name=f"{note.title}.pdf", mimetype='application/pdf')
+
 
 
 # ------------------------ DELETE NOTE ------------------------
