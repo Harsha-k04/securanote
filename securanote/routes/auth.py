@@ -10,17 +10,21 @@ from flask_mail import Message
 from securanote import mail
 from datetime import datetime, timedelta
 
+# Supabase client import
+from securanote.supabase_client import supabase
+
 auth_bp = Blueprint('auth', __name__)
 
 def send_otp(email, otp):
     msg = Message('Your OTP for Securanote', recipients=[email])
     msg.body = f"Your OTP is: {otp}"
     mail.send(msg)
+
 def is_strong_password(password):
     pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$'
     return re.match(pattern, password)
+
 def is_risky_login(user, request):
-    # Check for new IP login as risk (you can add more conditions)
     current_ip = request.remote_addr
     if user.last_ip and user.last_ip != current_ip:
         return True
@@ -34,11 +38,15 @@ def register():
             flash('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.', 'error')
             return redirect(url_for('auth.register'))
 
-        if User.query.filter_by(username=form.username.data).first():
+        # Check username in Supabase
+        existing_user = supabase.table("users").select("*").eq("username", form.username.data).execute()
+        if existing_user.data:
             flash('Username already exists', 'error')
             return redirect(url_for('auth.register'))
 
-        if User.query.filter_by(email=form.email.data).first():
+        # Check email in Supabase
+        existing_email = supabase.table("users").select("*").eq("email", form.email.data).execute()
+        if existing_email.data:
             flash('Email already registered', 'error')
             return redirect(url_for('auth.register'))
 
@@ -89,6 +97,7 @@ def login():
             return redirect(next_page or url_for('notes.dashboard'))
     return render_template('login.html', form=form)
 
+
 @auth_bp.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
@@ -107,6 +116,7 @@ def forgot_password():
 
     return render_template('forgot_password.html')
 
+
 @auth_bp.route('/verify_reset_otp', methods=['GET', 'POST'])
 def verify_reset_otp():
     if request.method == 'POST':
@@ -118,6 +128,7 @@ def verify_reset_otp():
             flash('Incorrect OTP.', 'error')
 
     return render_template('verify_reset_otp.html')
+
 
 @auth_bp.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
@@ -148,15 +159,16 @@ def reset_password():
 @login_required
 def logout():
     logout_user()
-    session.clear() 
+    session.clear()
     flash('You have been logged out.', 'info')
     return redirect(url_for('auth.login'))
+
 
 @auth_bp.route('/verify_otp', methods=['GET', 'POST'])
 def verify_otp():
     if request.method == 'POST':
         entered_otp = request.form.get('otp')
-        
+
         # Handle registration OTP
         if 'otp' in session:
             expiry = session.get('otp_expiry')
@@ -169,14 +181,15 @@ def verify_otp():
             if entered_otp == session.get('otp'):
                 user_data = session.get('pending_user')
                 if user_data:
-                    new_user = User(
-                        username=user_data['username'],
-                        email=user_data['email'],
-                        password_hash=user_data['password'],
-                        is_verified=True
-                    )
-                    db.session.add(new_user)
-                    db.session.commit()
+                    # Insert into Supabase
+                    supabase.table("users").insert({
+                        "username": user_data['username'],
+                        "email": user_data['email'],
+                        "password_hash": user_data['password'],
+                        "is_verified": True,
+                        "created_at": datetime.utcnow().isoformat()
+                    }).execute()
+
                     session.pop('pending_user', None)
                     session.pop('otp', None)
                     session.pop('otp_expiry', None)
@@ -184,7 +197,7 @@ def verify_otp():
                     return redirect(url_for('auth.login'))
             else:
                 flash('Invalid OTP', 'error')
-        
+
         # Handle adaptive login OTP
         elif 'adaptive_user_id' in session:
             expiry = session.get('adaptive_expiry')
@@ -211,6 +224,7 @@ def verify_otp():
 
     return render_template('verify_otp.html')
 
+
 @auth_bp.route('/resend_otp', methods=['POST'])
 def resend_otp():
     user_data = session.get('pending_user')
@@ -221,10 +235,11 @@ def resend_otp():
     otp = random.randint(100000, 999999)
     session['otp'] = str(otp)
     session['otp_expiry'] = (datetime.utcnow() + timedelta(minutes=5)).timestamp()
-    
+
     send_otp(user_data['email'], otp)
     flash('A new OTP has been sent to your email.', 'info')
     return redirect(url_for('auth.verify_otp'))
+
 
 @auth_bp.route('/resend_reset_otp', methods=['POST'])
 def resend_reset_otp():
@@ -238,5 +253,3 @@ def resend_reset_otp():
     send_otp(email, otp)
     flash('OTP resent successfully.', 'info')
     return redirect(url_for('auth.verify_reset_otp'))
-
-
