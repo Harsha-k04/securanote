@@ -129,6 +129,7 @@ def dashboard():
 
 
 # ------------------------ VIEW NOTE ------------------------
+# ------------------------ VIEW NOTE ------------------------
 @notes_bp.route("/note/<int:note_id>/view", methods=["GET", "POST"])
 @login_required
 def view_note(note_id):
@@ -190,7 +191,17 @@ def view_note(note_id):
         except Exception as e:
             flash(f"File decryption failed: {e}", "danger")
 
-    return render_template("view_note.html", note=note, decrypted=decrypted, file_url=file_url, file_ext=file_ext)
+    # ✅ Fix: pass note_id to export_pdf URL
+    export_pdf_url = url_for('notes.export_pdf', note_id=note.id)
+
+    return render_template(
+        "view_note.html",
+        note=note,
+        decrypted=decrypted,
+        file_url=file_url,
+        file_ext=file_ext,
+        export_pdf_url=export_pdf_url
+    )
 
 
 # ------------------------ EDIT NOTE ------------------------
