@@ -203,7 +203,8 @@ def resend_reset_otp():
     send_otp(email, otp)
     flash('OTP resent successfully.', 'info')
     return redirect(url_for('auth.verify_reset_otp'))
-    @auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+    
+@auth_bp.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == "POST":
         email = request.form.get("email")
