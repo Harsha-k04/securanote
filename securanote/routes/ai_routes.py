@@ -5,9 +5,14 @@ from flask import Blueprint, request, render_template, jsonify, redirect, url_fo
 from flask_login import login_required, current_user
 from dotenv import load_dotenv
 import requests
+import certifi
+import ssl
+from requests.adapters import HTTPAdapter
+from urllib3.poolmanager import PoolManager
+
 from securanote.models import Note  # Keep this for type/structure if needed
 from securanote import supabase  # Make sure your Supabase client is imported here
-import certifi
+
 load_dotenv()
 
 # ==============================
@@ -21,6 +26,18 @@ ai_bp = Blueprint("ai", __name__, url_prefix="/ai")
 GROK_API_KEY = os.getenv("GROK_API_KEY")
 GROK_API_URL = "https://api.grok.ai/v1/chat"  # Replace with actual endpoint if different
 
+# TLS Adapter to enforce modern TLS versions
+class TLSAdapter(HTTPAdapter):
+    def init_poolmanager(self, *args, **kwargs):
+        ctx = ssl.create_default_context()
+        ctx.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1  # Disable TLS 1.0 & 1.1
+        kwargs['ssl_context'] = ctx
+        return super().init_poolmanager(*args, **kwargs)
+
+# Create a requests session with TLS fix
+session = requests.Session()
+session.mount("https://", TLSAdapter())
+
 def grok_generate(prompt, model="grok-4", max_tokens=500):
     headers = {
         "Authorization": f"Bearer {GROK_API_KEY}",
@@ -33,7 +50,7 @@ def grok_generate(prompt, model="grok-4", max_tokens=500):
     }
 
     try:
-        response = requests.post(
+        response = session.post(
             GROK_API_URL,
             json=payload,
             headers=headers,
