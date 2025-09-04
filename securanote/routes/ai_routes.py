@@ -51,8 +51,18 @@ def gemini_generate(prompt, retries=3, backoff=2):
             response = requests.post(GEMINI_API_URL, json=payload, headers=headers)
             if response.status_code == 200:
                 data = response.json()
-                # Response text is usually in data["candidates"][0]["content"]
-                return data["candidates"][0]["content"].strip()
+                # Safely extract text from candidates -> content -> parts -> text
+                candidate = data.get("candidates", [{}])[0]
+                content_list = candidate.get("content", [])
+
+                if isinstance(content_list, list):
+                    texts = []
+                    for part in content_list:
+                        if isinstance(part, dict) and "text" in part:
+                            texts.append(part["text"])
+                    return "\n".join(texts).strip()
+                else:
+                    return str(content_list).strip()
             else:
                 logger.error(f"Gemini API Error {response.status_code}: {response.text}")
                 return f"Gemini API Error {response.status_code}: {response.text}"
