@@ -3,7 +3,6 @@ import random
 from datetime import datetime
 from flask import Blueprint, request, render_template, jsonify, redirect, url_for, flash
 from flask_login import login_required, current_user
-from dotenv import load_dotenv
 import requests
 import certifi
 import ssl
@@ -14,8 +13,6 @@ import logging
 
 from securanote.models import Note
 from securanote import supabase
-
-load_dotenv()
 
 # ==============================
 # Logging Setup
@@ -32,25 +29,28 @@ ai_bp = Blueprint("ai", __name__, url_prefix="/ai")
 # Grok API Setup
 # ==============================
 GROK_API_KEY = os.environ.get("GROK_API_KEY")
-print(GROK_API_KEY)
+if not GROK_API_KEY:
+    logger.error("GROK_API_KEY not found in environment. Set it in your venv before running.")
+    raise RuntimeError("Missing GROK_API_KEY")
+
 GROK_API_URL = "https://api.x.ai/v1/chat/completions"
 
 # TLS Adapter to enforce modern TLS versions
 class TLSAdapter(HTTPAdapter):
     def init_poolmanager(self, *args, **kwargs):
         ctx = ssl.create_default_context()
-        ctx.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1  # Disable TLS 1.0 & 1.1
+        ctx.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
         kwargs['ssl_context'] = ctx
         return super().init_poolmanager(*args, **kwargs)
 
-# Create a requests session with TLS fix
+# Requests session with TLS adapter
 session = requests.Session()
 session.mount("https://", TLSAdapter())
 
 # ==============================
 # Grok Generate with Retry
 # ==============================
-def grok_generate(prompt, model="grok-4", max_tokens=500, retries=3, backoff=2):
+def grok_generate(prompt, model="grok-4-latest", max_tokens=500, retries=3, backoff=2):
     headers = {
         "Authorization": f"Bearer {GROK_API_KEY}",
         "Content-Type": "application/json"
@@ -80,20 +80,16 @@ def grok_generate(prompt, model="grok-4", max_tokens=500, retries=3, backoff=2):
         except requests.exceptions.SSLError as ssl_err:
             attempt += 1
             logger.warning(f"SSL Error (attempt {attempt}/{retries}): {ssl_err}")
-            if attempt >= retries:
-                return f"SSL Error after {attempt} attempts: {ssl_err}"
             time.sleep(backoff ** attempt)
-
         except requests.exceptions.RequestException as req_err:
             attempt += 1
             logger.warning(f"Request Error (attempt {attempt}/{retries}): {req_err}")
-            if attempt >= retries:
-                return f"Request Error after {attempt} attempts: {req_err}"
             time.sleep(backoff ** attempt)
-
         except Exception as e:
             logger.error(f"Grok API Exception: {e}")
             return f"Grok API Exception: {e}"
+
+    return f"Grok API failed after {retries} attempts."
 
 # ==============================
 # AI Utilities
@@ -120,10 +116,7 @@ def assistant():
         action = data.get("action", "summarize")
 
         try:
-            if action == "summarize":
-                ai_response = generate_summary(content)
-            else:
-                ai_response = generate_notes(content)
+            ai_response = generate_summary(content) if action == "summarize" else generate_notes(content)
         except Exception as e:
             ai_response = f"Error: {e}"
 
@@ -147,10 +140,7 @@ def assistant():
                 prompt = f"{note_data.get('encrypted_content', '')}\n\nUser Query: {prompt}"
 
         try:
-            if "summarize" in prompt.lower():
-                ai_response = generate_summary(prompt)
-            else:
-                ai_response = generate_notes(prompt)
+            ai_response = generate_summary(prompt) if "summarize" in prompt.lower() else generate_notes(prompt)
         except Exception as e:
             ai_response = f"Error: {e}"
 
