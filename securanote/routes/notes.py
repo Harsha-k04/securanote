@@ -1,16 +1,16 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, session, current_app, send_file
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from werkzeug.utils import secure_filename
 from securanote import db
 from securanote.models import Note
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
+from PIL import Image
 import os
 import io
-from PIL import Image
 import uuid
 import base64
 import mimetypes
@@ -29,13 +29,12 @@ from securanote.utils import (
     fernet
 )
 
-# Load env
+# Load environment variables
 load_dotenv()
 
 notes_bp = Blueprint('notes', __name__)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'pdf'}
-
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -73,6 +72,7 @@ def dashboard():
 
         pin_hash = generate_password_hash(pin)
 
+        # Handle file upload
         file = request.files.get('file')
         filename = None
         encrypted_file_data = None
@@ -98,6 +98,7 @@ def dashboard():
                 flash("Failed to upload encrypted file to cloud.", "error")
                 return redirect(url_for("notes.dashboard"))
 
+        # Create note
         new_note = Note(
             title=title,
             encrypted_content=encrypted_content,
@@ -111,7 +112,7 @@ def dashboard():
 
         if request.form.get("share_note") == "yes":
             new_note.share_token = uuid.uuid4().hex
-            new_note.views_left = 1  # View once only
+            new_note.views_left = 1  # view once only
             new_note.share_expiry = None
 
         db.session.add(new_note)
@@ -122,7 +123,7 @@ def dashboard():
     user_notes = Note.query.filter_by(user_id=current_user.id).order_by(Note.timestamp.desc()).all()
     return render_template('dashboard.html', notes=user_notes, user=current_user)
 
-# ------------------------ View Note ------------------------
+
 @notes_bp.route("/note/<int:note_id>/view", methods=["GET", "POST"])
 @login_required
 def view_note(note_id):
@@ -136,8 +137,8 @@ def view_note(note_id):
     share_link = None
     qr_image_url = None
     qr_code_base64 = None
-    decrypted_path = None
 
+    # PIN session attempts
     attempt_key = f"attempts_note_{note_id}"
     session.setdefault(attempt_key, 0)
 
@@ -176,7 +177,7 @@ def view_note(note_id):
     if request.method == "GET":
         return render_template("enter_pin.html", note=note, attempts=session[attempt_key])
 
-    # Decrypt note content
+    # Decrypt content
     try:
         if note.encryption_type == 'AES':
             decrypted = fernet.decrypt(note.encrypted_content.encode()).decode()
@@ -191,39 +192,30 @@ def view_note(note_id):
         flash(f"Decryption failed: {e}", "danger")
         return render_template("enter_pin.html", note=note)
 
-    # Decrypt file if exists
+    # Decrypt file
     if note.file_path:
         file_ext = note.file_path.rsplit('.', 1)[-1].lower()
-        encrypted_file_path = os.path.join(current_app.root_path, 'static', 'uploads', note.file_path)
         try:
             encrypted_data = download_file_from_s3(note.file_path)
             if not encrypted_data:
                 flash("Could not fetch encrypted file from cloud.", "danger")
-                return redirect(url_for("notes.view_note", note_id=note.id))
-
-            if note.encryption_type == 'AES':
-                decrypted_data = fernet.decrypt(encrypted_data)
-            elif note.encryption_type == 'ChaCha':
-                decrypted_data = decrypt_chacha_bytes(encrypted_data)
-            elif note.encryption_type == 'Blowfish':
-                decrypted_data = decrypt_blowfish_bytes(encrypted_data, blowfish_key)
             else:
-                flash("Unsupported file encryption type.", "danger")
-                return render_template("view_note.html", note=note, decrypted=decrypted)
-
-            # Save decrypted file to temp folder
-            temp_folder = os.path.join(current_app.root_path, 'static', 'temp')
-            os.makedirs(temp_folder, exist_ok=True)
-            decrypted_path = os.path.join(temp_folder, note.file_path)
-            with open(decrypted_path, 'wb') as out_file:
-                out_file.write(decrypted_data)
-            if os.path.exists(decrypted_path):
+                if note.encryption_type == 'AES':
+                    decrypted_data = fernet.decrypt(encrypted_data)
+                elif note.encryption_type == 'ChaCha':
+                    decrypted_data = decrypt_chacha_bytes(encrypted_data)
+                elif note.encryption_type == 'Blowfish':
+                    decrypted_data = decrypt_blowfish_bytes(encrypted_data, blowfish_key)
+                temp_folder = os.path.join(current_app.root_path, 'static', 'temp')
+                os.makedirs(temp_folder, exist_ok=True)
+                decrypted_path = os.path.join(temp_folder, note.file_path)
+                with open(decrypted_path, 'wb') as f:
+                    f.write(decrypted_data)
                 file_url = url_for('static', filename=f'temp/{note.file_path}')
-            else:
-                print("Decrypted file was not saved:", decrypted_path)
         except Exception as e:
             flash(f"File decryption failed: {e}", "danger")
 
+    # Generate QR if shared
     if not share_link and note.share_token:
         share_link = url_for("notes.shared_note", token=note.share_token, _external=True)
         qr = qrcode.make(share_link)
