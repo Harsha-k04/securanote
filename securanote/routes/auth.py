@@ -3,7 +3,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 from securanote.forms import RegisterForm, LoginForm
 from securanote.models import User  # Keep User for Flask-Login
-from securanote import db, mail
+#from securanote import db
+from securanote import mail
 from flask_mail import Message
 import re
 import random
