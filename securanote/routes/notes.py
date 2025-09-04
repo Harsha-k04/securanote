@@ -140,24 +140,32 @@ def view_note(note_id):
     if note.user_id != current_user.id:
         abort(403)
 
-    attempt_key = f"attempts_note_{note_id}"
+    # ------------------ PIN CHECK ------------------
+    pin_session_key = f"pin_used_{note_id}"
+    attempt_key = f"pin_attempts_{note_id}"
     session.setdefault(attempt_key, 0)
 
-    if request.method == "POST":
-        if "pin" in request.form:
-            entered_pin = request.form["pin"]
-            if check_password_hash(note.pin_hash, entered_pin):
-                session[f"pin_used_{note_id}"] = entered_pin
-                session.pop(f"pin_attempts_{note_id}", None)
-            else:
-                attempts = session.get(f"pin_attempts_{note_id}", 0) + 1
-                session[f"pin_attempts_{note_id}"] = attempts
-                if attempts >= 3:
-                    session.pop(f"pin_attempts_{note_id}", None)
-                    return redirect(url_for("notes.verify_email_for_reset", note_id=note_id))
-                flash("Incorrect PIN", "danger")
-                return render_template("enter_pin.html", note=note, attempts=session[attempt_key])
+    if request.method == "POST" and "pin" in request.form:
+        entered_pin = request.form["pin"]
+        if check_password_hash(note.pin_hash, entered_pin):
+            session[pin_session_key] = entered_pin
+            session.pop(attempt_key, None)
+            flash("PIN verified successfully.", "success")
+        else:
+            attempts = session.get(attempt_key, 0) + 1
+            session[attempt_key] = attempts
+            if attempts >= 3:
+                session.pop(attempt_key, None)
+                return redirect(url_for("notes.verify_email_for_reset", note_id=note_id))
+            flash("Incorrect PIN", "danger")
+            return render_template("enter_pin.html", note=note, attempts=attempts)
 
+    elif note.pin_hash and pin_session_key not in session:
+        # PIN required and not yet entered
+        return render_template("enter_pin.html", note=note, attempts=session.get(attempt_key, 0))
+    # ------------------------------------------------
+
+    # Decrypt note content
     decrypted = None
     try:
         if note.encryption_type == 'AES':
@@ -169,6 +177,7 @@ def view_note(note_id):
     except Exception:
         flash("Decryption failed", "danger")
 
+    # Decrypt file if present
     file_url = None
     file_ext = None
     if note.file_path:
@@ -191,7 +200,6 @@ def view_note(note_id):
         except Exception as e:
             flash(f"File decryption failed: {e}", "danger")
 
-    # ✅ Fix: pass note_id to export_pdf URL
     export_pdf_url = url_for('notes.export_pdf', note_id=note.id)
 
     return render_template(
@@ -202,6 +210,7 @@ def view_note(note_id):
         file_ext=file_ext,
         export_pdf_url=export_pdf_url
     )
+
 
 
 # ------------------------ EDIT NOTE ------------------------
