@@ -1,11 +1,14 @@
 import os
+import random
+from datetime import datetime
 from flask import Blueprint, request, render_template, jsonify, redirect, url_for, flash
 from flask_login import login_required, current_user
-from securanote.models import Note
-from securanote import db
 from dotenv import load_dotenv
-load_dotenv()
 from openai import OpenAI
+from securanote.models import Note  # Keep this for type/structure if needed
+from securanote import supabase  # Make sure your Supabase client is imported here
+
+load_dotenv()
 
 # ==============================
 # Blueprint
@@ -20,14 +23,12 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 print("OpenAI API Key:", client)
 print("OPENAI_API_KEY:", os.getenv("OPENAI_API_KEY"))
 
-
-
 # ==============================
 # AI Utilities
 # ==============================
 def local_ai_generate(prompt):
     """Fallback AI generation (local placeholder)"""
-    return f"Local AI response: {prompt[:300]}..."  # show more content
+    return f"Local AI response: {prompt[:300]}..."
 
 def openai_generate(prompt, max_tokens=300):
     try:
@@ -75,8 +76,11 @@ def assistant():
 
         return jsonify({"response": ai_response})
 
-    # --- Fallback: render old ai_assistant.html if needed ---
-    notes = Note.query.filter_by(user_id=current_user.id).all()
+    # --- Fetch notes from Supabase ---
+    resp = supabase.table("notes").select("*").eq("user_id", current_user.id).execute()
+    notes_data = resp.data if resp.data else []
+    notes = [Note.from_dict(n) for n in notes_data]  # assuming your Note model has from_dict
+
     ai_response = None
 
     if request.method == "POST":
@@ -84,9 +88,10 @@ def assistant():
         prompt = request.form.get("prompt", "")
 
         if note_id:
-            note = Note.query.filter_by(id=note_id, user_id=current_user.id).first()
-            if note:
-                prompt = f"{note.encrypted_content}\n\nUser Query: {prompt}"
+            note_resp = supabase.table("notes").select("*").eq("id", note_id).eq("user_id", current_user.id).execute()
+            note_data = note_resp.data[0] if note_resp.data else None
+            if note_data:
+                prompt = f"{note_data.get('encrypted_content', '')}\n\nUser Query: {prompt}"
 
         try:
             if "summarize" in prompt.lower():
@@ -111,16 +116,15 @@ def save_ai_note():
         flash("Title and content are required to save the note.", "error")
         return redirect(url_for("notes.dashboard"))
 
-    # Save AI-generated note as a normal note
-    new_note = Note(
-        user_id=current_user.id,
-        title=title,
-        encrypted_content=content,
-        encryption_type="AES",  # default; user can edit later
-        pin_hash="0000"  # placeholder PIN; user can edit later
-    )
-    db.session.add(new_note)
-    db.session.commit()
+    # Save AI-generated note to Supabase
+    supabase.table("notes").insert({
+        "user_id": current_user.id,
+        "title": title,
+        "encrypted_content": content,
+        "encryption_type": "AES",
+        "pin_hash": "0000",
+        "timestamp": datetime.utcnow().isoformat()
+    }).execute()
 
     flash("AI-generated note saved successfully!", "success")
     return redirect(url_for("notes.dashboard"))
