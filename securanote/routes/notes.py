@@ -110,8 +110,8 @@ def dashboard():
             "user_id": current_user.id,
             "timestamp": datetime.utcnow().isoformat(),
             "pin_hash": pin_hash,
-            "file_path": filename,
-            "file_data": encrypted_file_data
+            "file_path": filename
+            
         }
 
         if request.form.get("share_note") == "yes":
