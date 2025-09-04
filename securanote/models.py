@@ -14,8 +14,21 @@ class User(UserMixin):
         self.last_login_time = last_login_time
         self.created_at = created_at or datetime.utcnow()
 
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            id=data.get("id"),
+            username=data.get("username"),
+            email=data.get("email"),
+            is_verified=data.get("is_verified", False),
+            last_ip=data.get("last_ip"),
+            last_login_time=data.get("last_login_time"),
+            created_at=data.get("created_at")
+        )
+
     def __repr__(self):
         return f"<User {self.username}>"
+
 
 # -------------------------------
 # Note model for Supabase
@@ -40,6 +53,45 @@ class Note:
         self.otp_code = otp_code
         self.otp_expiry = otp_expiry
         self.timestamp = timestamp or datetime.utcnow()
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            id=data.get("id"),
+            user_id=data.get("user_id"),
+            title=data.get("title"),
+            encrypted_content=data.get("encrypted_content"),
+            encryption_type=data.get("encryption_type"),
+            pin_hash=data.get("pin_hash"),
+            file_path=data.get("file_path"),
+            file_data=data.get("file_data"),
+            share_token=data.get("share_token"),
+            share_expiry=data.get("share_expiry"),
+            views_left=data.get("views_left", 0),
+            wrong_attempts=data.get("wrong_attempts", 0),
+            otp_code=data.get("otp_code"),
+            otp_expiry=data.get("otp_expiry"),
+            timestamp=data.get("timestamp")
+        )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "title": self.title,
+            "encrypted_content": self.encrypted_content,
+            "encryption_type": self.encryption_type,
+            "pin_hash": self.pin_hash,
+            "file_path": self.file_path,
+            "file_data": self.file_data,
+            "share_token": self.share_token,
+            "share_expiry": self.share_expiry,
+            "views_left": self.views_left,
+            "wrong_attempts": self.wrong_attempts,
+            "otp_code": self.otp_code,
+            "otp_expiry": self.otp_expiry,
+            "timestamp": self.timestamp
+        }
 
     def __repr__(self):
         return f"<Note {self.title}>"
