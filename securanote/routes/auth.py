@@ -67,34 +67,41 @@ def register():
 def login():
     form = LoginForm()
     if form.validate_on_submit():
+        # Fetch user from Supabase
         resp = supabase.table("users").select("*").eq("username", form.username.data).execute()
-        if not resp.data:
+        user_list = resp.get('data') if isinstance(resp, dict) else getattr(resp, 'data', None)
+
+        if not user_list:
             flash('Username not found', 'error')
             return render_template('login.html', form=form)
 
-        user_data = resp.data[0]
-        if not check_password_hash(user_data["password_hash"], form.password.data):
+        user_data = user_list[0]
+
+        # Check password
+        if not check_password_hash(user_data.get("password_hash", ""), form.password.data):
             flash('Incorrect password', 'error')
             return render_template('login.html', form=form)
 
-        if is_risky_login(user_data, request):
+        # Risky login check
+        current_ip = request.remote_addr
+        if user_data.get("last_ip") and user_data["last_ip"] != current_ip:
             otp = str(random.randint(100000, 999999))
             session['adaptive_user'] = user_data
             session['adaptive_otp'] = otp
             session['adaptive_remember'] = form.remember.data
-            session['adaptive_ip'] = request.remote_addr
+            session['adaptive_ip'] = current_ip
             session['adaptive_expiry'] = (datetime.utcnow() + timedelta(minutes=5)).timestamp()
             send_otp(user_data["email"], otp)
             flash('Suspicious login detected. OTP sent for verification.', 'info')
             return redirect(url_for('auth.verify_otp'))
 
         # Normal login
-        user = User(user_data["id"], user_data["username"], user_data["email"])
+        user = User(str(user_data["id"]), user_data["username"], user_data["email"])
         login_user(user, remember=form.remember.data)
 
-        # Update last login & IP in Supabase
+        # Update last login info
         supabase.table("users").update({
-            "last_ip": request.remote_addr,
+            "last_ip": current_ip,
             "last_login_time": datetime.utcnow().isoformat()
         }).eq("id", user_data["id"]).execute()
 
@@ -103,6 +110,7 @@ def login():
         return redirect(next_page or url_for('notes.dashboard'))
 
     return render_template('login.html', form=form)
+
 
 @auth_bp.route('/logout')
 @login_required
