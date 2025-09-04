@@ -54,7 +54,7 @@ def gemini_generate(prompt, retries=3, backoff=2):
                 candidate = data.get("candidates", [{}])[0]
                 content = candidate.get("content", {})
 
-                # content is a dict → get parts → extract text
+                # Extract text from parts
                 parts = content.get("parts", [])
                 texts = [part.get("text", "") for part in parts if "text" in part]
 
@@ -93,7 +93,10 @@ def assistant():
         action = data.get("action", "summarize")
 
         try:
-            ai_response = generate_summary(content) if action == "summarize" else generate_notes(content)
+            if action == "summarize":
+                ai_response = generate_summary(content)
+            else:
+                ai_response = generate_notes(content)
         except Exception as e:
             ai_response = f"Error: {e}"
 
@@ -109,17 +112,22 @@ def assistant():
     if request.method == "POST":
         note_id = request.form.get("note_id")
         prompt = request.form.get("prompt", "")
+        action = request.form.get("action", "summarize")
 
-        if note_id:
+        if note_id:  # Summarize a saved note
             note_resp = supabase.table("notes").select("*").eq("id", note_id).eq("user_id", current_user.id).execute()
             note_data = note_resp.data[0] if note_resp.data else None
             if note_data:
-                prompt = f"{note_data.get('encrypted_content', '')}\n\nUser Query: {prompt}"
-
-        try:
-            ai_response = generate_summary(prompt) if "summarize" in prompt.lower() else generate_notes(prompt)
-        except Exception as e:
-            ai_response = f"Error: {e}"
+                note_content = note_data.get("encrypted_content", "")
+                try:
+                    ai_response = generate_summary(note_content)
+                except Exception as e:
+                    ai_response = f"Error: {e}"
+        elif action == "generate" and prompt:  # Generate notes on a topic
+            try:
+                ai_response = generate_notes(prompt)
+            except Exception as e:
+                ai_response = f"Error: {e}"
 
     return render_template("ai_assistant.html", user=current_user, notes=notes, ai_response=ai_response)
 
