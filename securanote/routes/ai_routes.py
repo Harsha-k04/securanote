@@ -31,7 +31,8 @@ ai_bp = Blueprint("ai", __name__, url_prefix="/ai")
 # ==============================
 # Grok API Setup
 # ==============================
-GROK_API_KEY = os.getenv("GROK_API_KEY")
+GROK_API_KEY = os.environ.get("GROK_API_KEY")
+print(GROK_API_KEY)
 GROK_API_URL = "https://api.x.ai/v1/chat/completions"
 
 # TLS Adapter to enforce modern TLS versions
