@@ -22,27 +22,27 @@ logger = logging.getLogger(__name__)
 ai_bp = Blueprint("ai", __name__, url_prefix="/ai")
 
 # ==============================
-# Gemini API Setup
+# Gemini 2.0 API Setup
 # ==============================
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
     logger.error("GEMINI_API_KEY not found in environment. Set it in your venv before running.")
     raise RuntimeError("Missing GEMINI_API_KEY")
 
-GEMINI_API_URL = "https://api.gemini.com/v1/ai/chat/completions"  # Update if endpoint differs
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
 # ==============================
 # Gemini Generate with Retry
 # ==============================
-def gemini_generate(prompt, model="gemini-1.5", max_tokens=500, retries=3, backoff=2):
+def gemini_generate(prompt, retries=3, backoff=2):
     headers = {
-        "Authorization": f"Bearer {GEMINI_API_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "X-goog-api-key": GEMINI_API_KEY
     }
     payload = {
-        "model": model,
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": max_tokens
+        "contents": [
+            {"parts": [{"text": prompt}]}
+        ]
     }
 
     attempt = 0
@@ -51,19 +51,15 @@ def gemini_generate(prompt, model="gemini-1.5", max_tokens=500, retries=3, backo
             response = requests.post(GEMINI_API_URL, json=payload, headers=headers)
             if response.status_code == 200:
                 data = response.json()
-                # Adjust this key access if Gemini’s response format differs
-                return data["choices"][0]["message"]["content"].strip()
+                # Response text is usually in data["candidates"][0]["content"]
+                return data["candidates"][0]["content"].strip()
             else:
                 logger.error(f"Gemini API Error {response.status_code}: {response.text}")
                 return f"Gemini API Error {response.status_code}: {response.text}"
-        except requests.exceptions.RequestException as req_err:
+        except requests.exceptions.RequestException as e:
             attempt += 1
-            logger.warning(f"Request Error (attempt {attempt}/{retries}): {req_err}")
+            logger.warning(f"Request failed (attempt {attempt}/{retries}): {e}")
             time.sleep(backoff ** attempt)
-        except Exception as e:
-            logger.error(f"Gemini API Exception: {e}")
-            return f"Gemini API Exception: {e}"
-
     return f"Gemini API failed after {retries} attempts."
 
 # ==============================
@@ -73,11 +69,11 @@ def generate_summary(note_text):
     if len(note_text) > 3000:
         note_text = note_text[:3000] + " ...[truncated]"
     prompt = f"Summarize this note into concise points:\n{note_text}"
-    return gemini_generate(prompt, max_tokens=500)
+    return gemini_generate(prompt)
 
 def generate_notes(topic):
     prompt = f"Generate detailed notes on the topic: {topic}"
-    return gemini_generate(prompt, max_tokens=500)
+    return gemini_generate(prompt)
 
 # ==============================
 # AI Assistant Route
