@@ -3,15 +3,8 @@ from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
-import os, io, uuid, base64, mimetypes, random
-from PIL import Image
-from reportlab.pdfgen import canvas
-from reportlab.lib.utils import ImageReader
-import qrcode
-import smtplib
-from email.message import EmailMessage
-
+from securanote.supabase_client import supabase
+from securanote.models import Note
 from securanote.utils import (
     encrypt_blowfish, decrypt_blowfish,
     encrypt_blowfish_bytes, decrypt_blowfish_bytes,
@@ -20,33 +13,13 @@ from securanote.utils import (
     fernet,
     upload_file_to_s3, download_file_from_s3
 )
-
-# Supabase client
-from securanote.supabase_client import supabase
-
-load_dotenv()
+import uuid, os, io, base64, mimetypes, random, qrcode
 
 notes_bp = Blueprint('notes', __name__)
-
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'pdf'}
-UPLOAD_FOLDER = os.path.join('static', 'uploads')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def send_otp_email(to_email, otp_code):
-    msg = EmailMessage()
-    msg.set_content(f"Your Securanote OTP code is: {otp_code}")
-    msg["Subject"] = "Securanote OTP Verification"
-    msg["From"] = "securanote@gmail.com"
-    msg["To"] = to_email
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-        server.starttls()
-        server.login("securanote@gmail.com", "nyyq xzom ptoy fgjv")
-        server.send_message(msg)
 
 
 # ------------------------ Dashboard ------------------------
@@ -84,7 +57,6 @@ def dashboard():
         file = request.files.get('file')
         filename = None
         encrypted_file_data = None
-
         if file and file.filename != '' and allowed_file(file.filename):
             filename = f"{uuid.uuid4().hex}_{secure_filename(file.filename)}"
             file_data = file.read()
@@ -100,38 +72,30 @@ def dashboard():
             except Exception as e:
                 flash(f"File encryption failed: {e}", 'error')
                 return redirect(url_for('notes.dashboard'))
+            upload_file_to_s3(encrypted_file_data, filename)
 
-            upload_success = upload_file_to_s3(encrypted_file_data, filename)
-            if not upload_success:
-                flash("Failed to upload encrypted file to cloud.", "error")
-                return redirect(url_for("notes.dashboard"))
-
-        # Insert note into Supabase
+        # Save note to Supabase
         note_data = {
+            "user_id": current_user.id,
             "title": title,
             "encrypted_content": encrypted_content,
             "encryption_type": encryption_type,
-            "user_id": current_user.id,
-            "timestamp": datetime.utcnow().isoformat(),
             "pin_hash": pin_hash,
             "file_path": filename,
             "file_data": encrypted_file_data,
-            "share_token": None,
-            "views_left": None,
-            "share_expiry": None
+            "timestamp": datetime.utcnow().isoformat()
         }
-
         if request.form.get("share_note") == "yes":
             note_data["share_token"] = uuid.uuid4().hex
-            note_data["views_left"] = 1  # view once only
-
+            note_data["views_left"] = 1
         supabase.table("notes").insert(note_data).execute()
+
         flash('Note added successfully.', 'success')
         return redirect(url_for('notes.dashboard'))
 
     # Fetch user notes
     resp = supabase.table("notes").select("*").eq("user_id", current_user.id).order("timestamp", desc=True).execute()
-    user_notes = resp.data or []
+    user_notes = [Note.from_dict(n) for n in resp.data] if resp.data else []
     return render_template('dashboard.html', notes=user_notes, user=current_user)
 
 
