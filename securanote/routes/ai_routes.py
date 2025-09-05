@@ -92,44 +92,43 @@ def assistant():
         content = data.get("content", "")
         action = data.get("action", "summarize")
 
+        # Optional: Decrypt if content is encrypted (from note)
+        decrypted_content = content
+        if data.get("note_id"):
+            note_id = data.get("note_id")
+            note_resp = supabase.table("notes").select("*").eq("id", note_id).eq("user_id", current_user.id).execute()
+            if note_resp.data:
+                note = Note.from_dict(note_resp.data[0])
+                try:
+                    if note.encryption_type == 'AES':
+                        decrypted_content = fernet.decrypt(note.encrypted_content.encode()).decode()
+                    elif note.encryption_type == 'ChaCha':
+                        decrypted_content = decrypt_chacha(note.encrypted_content)
+                    elif note.encryption_type == 'Blowfish':
+                        decrypted_content = decrypt_blowfish(note.encrypted_content, blowfish_key)
+                except Exception:
+                    decrypted_content = note.encrypted_content  # fallback
+
         try:
             if action == "summarize":
-                ai_response = generate_summary(content)
+                ai_response = generate_summary(decrypted_content)
+            elif action == "highlights":
+                ai_response = gemini_generate(f"Extract highlights from this note:\n{decrypted_content}")
+            elif action == "qa":
+                ai_response = gemini_generate(f"Answer the following question using this note:\n{decrypted_content}\nQuestion: {data.get('question','')}")
             else:
-                ai_response = generate_notes(content)
+                ai_response = gemini_generate(f"Perform '{action}' on this note:\n{decrypted_content}")
         except Exception as e:
             ai_response = f"Error: {e}"
 
         return jsonify({"response": ai_response})
 
-    # Fetch notes from Supabase
+    # GET request - fetch user's notes
     resp = supabase.table("notes").select("*").eq("user_id", current_user.id).execute()
     notes_data = resp.data if resp.data else []
     notes = [Note.from_dict(n) for n in notes_data]
 
-    ai_response = None
-
-    if request.method == "POST":
-        note_id = request.form.get("note_id")
-        prompt = request.form.get("prompt", "")
-        action = request.form.get("action", "summarize")
-
-        if note_id:  # Summarize a saved note
-            note_resp = supabase.table("notes").select("*").eq("id", note_id).eq("user_id", current_user.id).execute()
-            note_data = note_resp.data[0] if note_resp.data else None
-            if note_data:
-                note_content = note_data.get("encrypted_content", "")
-                try:
-                    ai_response = generate_summary(note_content)
-                except Exception as e:
-                    ai_response = f"Error: {e}"
-        elif action == "generate" and prompt:  # Generate notes on a topic
-            try:
-                ai_response = generate_notes(prompt)
-            except Exception as e:
-                ai_response = f"Error: {e}"
-
-    return render_template("ai_assistant.html", user=current_user, notes=notes, ai_response=ai_response)
+    return render_template("ai_assistant.html", user=current_user, notes=notes, ai_response=None)
 
 # ==============================
 # Save AI Note Route
