@@ -85,14 +85,13 @@
             {% elif ext == 'mp3' %}
                 <audio controls class="mt-2 w-full"><source src="{{ file_url }}" type="audio/mpeg"></audio>
             {% elif ext in ['mp4','webm','ogg'] and file_url %}
-                <video width="640" height="360" controls class="rounded-lg shadow"><source src="{{ file_url }}" type="video/{{ file_ext }}"></video>
+                <video width="640" height="360" controls class="rounded-lg shadow"><source src="{{ file_url }}" type="video/{{ ext }}"></video>
             {% else %}
                 <a href="{{ url_for('notes.view_file', filename=note.file_path) }}" target="_blank" class="text-blue-600 underline hover:text-blue-800 transition">Download File</a>
             {% endif %}
         </div>
         {% endif %}
 
-        <!-- PDF Export -->
         <!-- PDF Export -->
         <form action="{{ url_for('notes.export_pdf', note_id=note.id) }}" method="POST" class="mt-6">
             <input type="hidden" name="title" value="{{ note.title }}">
@@ -102,7 +101,6 @@
             {% endif %}
             <button type="submit" class="btn-primary px-4 py-2 rounded-lg text-white font-medium">Download as PDF</button>
         </form>
-
 
         <!-- Share Section -->
         <div class="mt-10 border-t border-blue-200 pt-6">
@@ -162,6 +160,10 @@ const aiNoteTitle = document.getElementById("aiNoteTitle");
 const aiNoteContent = document.getElementById("aiNoteContent");
 const saveAiForm = document.getElementById("saveAiForm");
 
+// Properly escape decrypted content for JS
+const noteContent = {{ decrypted|tojson }};
+const noteId = "{{ note.id }}";
+
 aiBtn.addEventListener("click", () => {
     aiPromptSection.classList.toggle("hidden");
     aiText.innerText = "";
@@ -171,8 +173,8 @@ aiBtn.addEventListener("click", () => {
 });
 
 aiGenerateBtn.addEventListener("click", async () => {
-    const noteContent = `{{ decrypted|safe }}`;
-    const prompt = document.getElementById("aiPrompt").value || noteContent;
+    const promptInput = document.getElementById("aiPrompt").value.trim();
+    const prompt = promptInput || noteContent;
     aiText.innerText = "🤖 Thinking...";
 
     try {
@@ -182,22 +184,22 @@ aiGenerateBtn.addEventListener("click", async () => {
             body: JSON.stringify({
                 content: prompt,
                 action: "summarize",
-                note_id: {{ note.id }}
+                note_id: noteId
             })
         });
         const data = await res.json();
         aiText.innerText = data.response || "⚠️ No response from AI.";
 
-        // Prepare form to save AI note (user saves manually)
+        // Prepare form to save AI note
         aiNoteTitle.value = "AI Generated Note";
         aiNoteContent.value = data.response || "";
         saveAiForm.classList.remove("hidden");
         saveAiForm.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (err) {
+        console.error(err);
         aiText.innerText = "❌ Error contacting AI Assistant.";
     }
 });
-
 </script>
 
 </body>
