@@ -427,6 +427,7 @@ def generate_share_link(note_id):
     note = Note.from_dict(resp.data[0])
     if note.user_id != current_user.id:
         abort(403)
+
     view_once = request.form.get('view_once') == 'on'  # Checkbox value handling
     share_token = note.share_token or uuid.uuid4().hex
     views_left = 1 if view_once else None
@@ -439,9 +440,31 @@ def generate_share_link(note_id):
         "share_expiry": share_expiry
     }).eq("id", note_id).execute()
 
-    flash("Shareable link generated.", "success")
-    # Redirect back to the note view where share_link will be displayed
-    return redirect(url_for('notes.view_note', note_id=note_id))
+    # Prepare the share link
+    share_link = url_for('notes.view_shared_note', token=share_token, _external=True)
+
+    # Fetch note content again to render template
+    resp = supabase.table("notes").select("*").eq("id", note_id).execute()
+    note = Note.from_dict(resp.data[0])
+
+    # Decrypt note content for rendering
+    decrypted = ""
+    try:
+        if note.encryption_type == 'AES':
+            decrypted = fernet.decrypt(note.encrypted_content.encode()).decode()
+        elif note.encryption_type == 'ChaCha':
+            decrypted = decrypt_chacha(note.encrypted_content)
+        elif note.encryption_type == 'Blowfish':
+            decrypted = decrypt_blowfish(note.encrypted_content, blowfish_key)
+    except Exception:
+        decrypted = ""
+
+    return render_template(
+        "view_note.html",
+        note=note,
+        decrypted=decrypted,
+        share_link=share_link  # <-- pass the link here
+    )
 
 
 @notes_bp.route('/shared/<token>', methods=['GET'])
