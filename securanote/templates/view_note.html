@@ -182,8 +182,8 @@ aiGenerateBtn.addEventListener("click", async () => {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                content: prompt,
-                action: "summarize",
+                content: promptInput,
+                note_content: noteContent, 
                 note_id: noteId
             })
         });
