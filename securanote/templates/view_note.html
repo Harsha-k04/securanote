@@ -179,7 +179,11 @@ aiGenerateBtn.addEventListener("click", async () => {
         const res = await fetch("{{ url_for('ai.assistant') }}", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content: prompt, action: "summarize" })
+            body: JSON.stringify({
+                content: prompt,
+                action: "summarize",
+                note_id: {{ note.id }}
+            })
         });
         const data = await res.json();
         aiText.innerText = data.response || "⚠️ No response from AI.";
@@ -193,6 +197,7 @@ aiGenerateBtn.addEventListener("click", async () => {
         aiText.innerText = "❌ Error contacting AI Assistant.";
     }
 });
+
 </script>
 
 </body>
