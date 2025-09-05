@@ -47,9 +47,14 @@ def send_otp_email(to_email, otp_code):
         server.send_message(msg)
 
 # ------------------------ DASHBOARD & ADD NOTE ------------------------
+# ------------------------ DASHBOARD & ADD NOTE ------------------------
 @notes_bp.route('/dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
+    # ----------------- Handle AI pre-fill -----------------
+    prefill_title = request.args.get("new_title", "")
+    prefill_content = request.args.get("new_content", "")
+
     if request.method == 'POST':
         title = request.form.get('title')
         content = request.form.get('content')
@@ -123,9 +128,17 @@ def dashboard():
         flash('Note added successfully.', 'success')
         return redirect(url_for('notes.dashboard'))
 
+    # GET: Fetch user notes
     resp = supabase.table("notes").select("*").eq("user_id", current_user.id).order("timestamp", desc=True).execute()
     user_notes = [Note.from_dict(n) for n in resp.data] if resp.data else []
-    return render_template('dashboard.html', notes=user_notes, user=current_user)
+
+    return render_template(
+        'dashboard.html', 
+        notes=user_notes, 
+        user=current_user,
+        prefill_title=prefill_title,
+        prefill_content=prefill_content
+    )
 
 # ------------------------ VIEW NOTE ------------------------
 @notes_bp.route("/note/<int:note_id>/view", methods=["GET", "POST"])
@@ -286,6 +299,17 @@ def edit_note(note_id):
 
     return render_template('edit_note.html', note=note, decrypted_content=decrypted_content)
 
+@notes_bp.route('/new_ai_note', methods=['GET'])
+@login_required
+def new_ai_note():
+    """
+    Redirected from AI Assistant.
+    Pre-fills title and content for user to edit/save manually.
+    """
+    title = request.args.get("title", "AI Generated Note")
+    content = request.args.get("content", "")
+
+    return render_template("new_note.html", title=title, content=content)
 
 # ------------------------ OTP RESET ------------------------
 @notes_bp.route("/verify_email_for_reset/<int:note_id>", methods=["GET", "POST"])
