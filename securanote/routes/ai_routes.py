@@ -102,15 +102,40 @@ def assistant():
     return render_template("ai_assistant.html", user=current_user, notes=notes, ai_response=None)
 
 # ==============================
+# securanote/ai_routes.py
 @ai_bp.route("/prefill-ai-note", methods=["POST"])
 @login_required
 def prefill_ai_note():
-    """
-    Pre-fills the dashboard's 'New Note' form with AI-generated title/content.
-    Instead of saving immediately, it redirects back to dashboard with query parameters.
-    """
-    ai_title = request.form.get("title") or "AI Generated Note"
-    ai_content = request.form.get("content") or ""
+    ai_title = request.form.get("ai_title") or "AI Generated Note"
+    ai_content = request.form.get("ai_content", "")
 
-    # Redirect to dashboard with pre-filled query parameters
-    return redirect(url_for("notes.dashboard", ai_title=ai_title, ai_content=ai_content))
+    if not ai_content:
+        flash("AI content is empty, cannot save note.", "error")
+        return redirect(url_for("notes.dashboard"))
+
+    # Encrypt content
+    try:
+        encrypted = fernet.encrypt(ai_content.encode()).decode()
+    except Exception as e:
+        logger.exception("Failed to encrypt AI note: %s", e)
+        flash("Failed to encrypt AI-generated note.", "error")
+        return redirect(url_for("notes.dashboard"))
+
+    # Save to Supabase
+    try:
+        supabase.table("notes").insert({
+            "user_id": current_user.id,
+            "title": ai_title,
+            "encrypted_content": encrypted,
+            "encryption_type": "AES",
+            "pin_hash": generate_password_hash("0000"),
+            "timestamp": datetime.utcnow().isoformat()
+        }).execute()
+    except Exception as e:
+        logger.exception("Failed to save AI note to Supabase: %s", e)
+        flash("Failed to save AI note.", "error")
+        return redirect(url_for("notes.dashboard"))
+
+    flash("AI-generated note saved successfully!", "success")
+    return redirect(url_for("notes.dashboard"))
+
