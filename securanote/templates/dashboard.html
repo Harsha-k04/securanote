@@ -149,7 +149,7 @@
     const params = {};
     window.location.search.substring(1).split("&").forEach(function(pair) {
       const [key, value] = pair.split("=");
-      if (key) params[decodeURIComponent(key)] = decodeURIComponent(value || "");
+      if (key) params[decodeURIComponent(key)] = decodeURIComponent(value || "").replace(/\+/g, " "));
     });
     return params;
   }
