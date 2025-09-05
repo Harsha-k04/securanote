@@ -10,6 +10,7 @@ from reportlab.lib.utils import ImageReader
 from PIL import Image
 from email.message import EmailMessage
 import smtplib
+import logging
 
 from securanote.supabase_client import supabase
 from securanote.models import Note
@@ -24,16 +25,15 @@ from securanote.utils import (
 from securanote import send_otp
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 notes_bp = Blueprint('notes', __name__)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4', 'pdf'}
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 
 def send_otp_email(to_email, otp_code):
     msg = EmailMessage()
@@ -45,7 +45,6 @@ def send_otp_email(to_email, otp_code):
         server.starttls()
         server.login("securanote@gmail.com", "nyyq xzom ptoy fgjv")
         server.send_message(msg)
-
 
 # ------------------------ DASHBOARD & ADD NOTE ------------------------
 @notes_bp.route('/dashboard', methods=['GET', 'POST'])
@@ -72,6 +71,7 @@ def dashboard():
                 flash('Invalid encryption type selected.', 'error')
                 return redirect(url_for('notes.dashboard'))
         except Exception as e:
+            logger.exception("Content encryption failed: %s", e)
             flash(f"Content encryption failed: {e}", "error")
             return redirect(url_for('notes.dashboard'))
 
@@ -95,6 +95,7 @@ def dashboard():
                 elif encryption_type == 'Blowfish':
                     encrypted_file_data = encrypt_blowfish_bytes(file_data, blowfish_key)
             except Exception as e:
+                logger.exception("File encryption failed: %s", e)
                 flash(f"File encryption failed: {e}", 'error')
                 return redirect(url_for('notes.dashboard'))
 
@@ -111,7 +112,6 @@ def dashboard():
             "timestamp": datetime.utcnow().isoformat(),
             "pin_hash": pin_hash,
             "file_path": filename
-            
         }
 
         if request.form.get("share_note") == "yes":
@@ -126,7 +126,6 @@ def dashboard():
     resp = supabase.table("notes").select("*").eq("user_id", current_user.id).order("timestamp", desc=True).execute()
     user_notes = [Note.from_dict(n) for n in resp.data] if resp.data else []
     return render_template('dashboard.html', notes=user_notes, user=current_user)
-
 
 # ------------------------ VIEW NOTE ------------------------
 @notes_bp.route("/note/<int:note_id>/view", methods=["GET", "POST"])
@@ -146,7 +145,6 @@ def view_note(note_id):
     if request.method == "POST" and "pin" in request.form:
         entered_pin = request.form["pin"]
         if check_password_hash(note.pin_hash, entered_pin):
-            # Do NOT save PIN in session (forces re-entry every time)
             session.pop(attempt_key, None)
             flash("PIN verified successfully.", "success")
         else:
@@ -164,7 +162,7 @@ def view_note(note_id):
     # ------------------------------------------------
 
     # Decrypt note content
-    decrypted = None
+    decrypted = ""
     try:
         if note.encryption_type == 'AES':
             decrypted = fernet.decrypt(note.encrypted_content.encode()).decode()
@@ -172,8 +170,10 @@ def view_note(note_id):
             decrypted = decrypt_chacha(note.encrypted_content)
         elif note.encryption_type == 'Blowfish':
             decrypted = decrypt_blowfish(note.encrypted_content, blowfish_key)
-    except Exception:
+    except Exception as e:
+        logger.exception("Decryption failed for note %s: %s", note_id, e)
         flash("Decryption failed", "danger")
+        decrypted = ""
 
     # Decrypt file if present
     file_url = None
@@ -196,6 +196,7 @@ def view_note(note_id):
                     f.write(decrypted_data)
                 file_url = url_for('static', filename=f'temp/{note.file_path}')
         except Exception as e:
+            logger.exception("File decryption failed for note %s: %s", note_id, e)
             flash(f"File decryption failed: {e}", "danger")
 
     export_pdf_url = url_for('notes.export_pdf', note_id=note.id)
@@ -208,6 +209,7 @@ def view_note(note_id):
         file_ext=file_ext,
         export_pdf_url=export_pdf_url
     )
+
 
 # ------------------------ EDIT NOTE ------------------------
 @notes_bp.route("/edit/<int:note_id>/pin", methods=["GET", "POST"])
