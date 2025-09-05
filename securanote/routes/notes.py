@@ -417,6 +417,31 @@ def share_note(note_id):
     img.save(buf)
     buf.seek(0)
     return send_file(buf, mimetype='image/png', download_name=f'share_qr_{note_id}.png')
+# Add this POST route to handle Generate Link form submission
+@notes_bp.route('/note/<int:note_id>/share', methods=['POST'])
+@login_required
+def generate_share_link(note_id):
+    resp = supabase.table("notes").select("*").eq("id", note_id).execute()
+    if not resp.data:
+        abort(404)
+    note = Note.from_dict(resp.data[0])
+    if note.user_id != current_user.id:
+        abort(403)
+    view_once = request.form.get('view_once') == 'on'  # Checkbox value handling
+    share_token = note.share_token or uuid.uuid4().hex
+    views_left = 1 if view_once else None
+    share_expiry = None if view_once else (datetime.utcnow() + timedelta(days=1)).isoformat()
+
+    # Update the note with sharing info
+    supabase.table("notes").update({
+        "share_token": share_token,
+        "views_left": views_left,
+        "share_expiry": share_expiry
+    }).eq("id", note_id).execute()
+
+    flash("Shareable link generated.", "success")
+    # Redirect back to the note view where share_link will be displayed
+    return redirect(url_for('notes.view_note', note_id=note_id))
 
 
 @notes_bp.route('/shared/<token>', methods=['GET'])
