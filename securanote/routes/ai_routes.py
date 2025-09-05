@@ -106,12 +106,13 @@ def assistant():
         if not decrypted_content:
             return jsonify({"response": "Note content is empty or could not be decrypted."})
 
-        # Build AI prompt dynamically
+        # Build AI prompt dynamically based on user query
         try:
             if not query:
                 # Default action = summarize if no query
                 prompt = f"Summarize this note into concise points:\n{decrypted_content}"
             else:
+                # Use the query directly for Gemini
                 prompt = (
                     f"You are an AI assistant. The user has a note and a query.\n\n"
                     f"Note:\n{decrypted_content}\n\n"
