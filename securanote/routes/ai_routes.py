@@ -29,7 +29,6 @@ GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini
 def gemini_generate(prompt, retries=3, backoff=2):
     headers = {"Content-Type": "application/json", "X-goog-api-key": GEMINI_API_KEY}
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
-
     for attempt in range(1, retries + 1):
         try:
             response = requests.post(GEMINI_API_URL, json=payload, headers=headers, timeout=20)
@@ -63,7 +62,6 @@ def assistant():
         query = data.get("query", "").strip()
         note_content = data.get("note_content", "")
         note_id = data.get("note_id")
-
         decrypted_content = ""
         if note_id:
             try:
@@ -78,13 +76,10 @@ def assistant():
                         decrypted_content = decrypt_blowfish(note.encrypted_content, blowfish_key)
             except Exception as e:
                 logger.warning("Failed to fetch/decrypt note: %s", e)
-
         if not decrypted_content:
             decrypted_content = note_content or ""
-
         if not decrypted_content:
             return jsonify({"response": "Note content is empty or could not be decrypted."})
-
         # Build prompt
         prompt = f"Summarize this note into concise points:\n{decrypted_content}" if not query else (
             f"You are an AI assistant. The user has a note and a query.\n\n"
@@ -92,10 +87,8 @@ def assistant():
             f"User query: {query}\n\n"
             f"Provide the best possible response."
         )
-
         ai_response = gemini_generate(prompt)
         return jsonify({"response": ai_response})
-
     # GET request: render AI assistant page with option to pre-fill new note
     resp = supabase.table("notes").select("*").eq("user_id", current_user.id).execute()
     notes = [Note.from_dict(n) for n in resp.data] if resp.data else []
@@ -113,33 +106,5 @@ def prefill_ai_note():
         flash("AI content is empty, cannot save note.", "error")
         return redirect(url_for("notes.dashboard"))
 
-    # Encrypt content
-    try:
-        encrypted = fernet.encrypt(ai_content.encode()).decode()
-    except Exception as e:
-        logger.exception("Failed to encrypt AI note: %s", e)
-        flash("Failed to encrypt AI-generated note.", "error")
-        return redirect(url_for("notes.dashboard"))
-
-    # Save to Supabase
-    try:
-        response = supabase.table("notes").insert({
-            "user_id": current_user.id,
-            "title": ai_title,
-            "encrypted_content": encrypted,
-            "encryption_type": "AES",
-            "pin_hash": generate_password_hash("0000"),
-            "timestamp": datetime.utcnow().isoformat()
-        }).execute()
-        # Optionally get the inserted note id
-        note_id = response.data[0]["id"] if response.data else None
-    except Exception as e:
-        logger.exception("Failed to save AI note to Supabase: %s", e)
-        flash("Failed to save AI note.", "error")
-        return redirect(url_for("notes.dashboard"))
-
-    flash("AI-generated note saved successfully!", "success")
-    if note_id:
-        return redirect(url_for("notes.view_note", note_id=note_id))
-    return redirect(url_for("notes.dashboard"))
-
+    # CHANGE: Instead of saving, redirect with prefill params
+    return redirect(url_for("notes.dashboard", new_title=ai_title, new_content=ai_content))
