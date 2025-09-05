@@ -102,14 +102,14 @@ def assistant():
     return render_template("ai_assistant.html", user=current_user, notes=notes, ai_response=None)
 
 # ==============================
-# securanote/ai_routes.py
 @ai_bp.route("/prefill-ai-note", methods=["POST"])
 @login_required
 def prefill_ai_note():
-    ai_title = request.form.get("ai_title") or "AI Generated Note"
-    ai_content = request.form.get("ai_content", "")
+    # Match the names in view_note.html hidden inputs
+    ai_title = request.form.get("title") or "AI Generated Note"
+    ai_content = request.form.get("content", "")
 
-    if not ai_content:
+    if not ai_content.strip():
         flash("AI content is empty, cannot save note.", "error")
         return redirect(url_for("notes.dashboard"))
 
@@ -123,7 +123,7 @@ def prefill_ai_note():
 
     # Save to Supabase
     try:
-        supabase.table("notes").insert({
+        response = supabase.table("notes").insert({
             "user_id": current_user.id,
             "title": ai_title,
             "encrypted_content": encrypted,
@@ -131,11 +131,15 @@ def prefill_ai_note():
             "pin_hash": generate_password_hash("0000"),
             "timestamp": datetime.utcnow().isoformat()
         }).execute()
+        # Optionally get the inserted note id
+        note_id = response.data[0]["id"] if response.data else None
     except Exception as e:
         logger.exception("Failed to save AI note to Supabase: %s", e)
         flash("Failed to save AI note.", "error")
         return redirect(url_for("notes.dashboard"))
 
     flash("AI-generated note saved successfully!", "success")
+    if note_id:
+        return redirect(url_for("notes.view_note", note_id=note_id))
     return redirect(url_for("notes.dashboard"))
 
