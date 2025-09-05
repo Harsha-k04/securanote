@@ -6,7 +6,7 @@ from datetime import datetime
 from flask import Blueprint, request, render_template, jsonify, redirect, url_for, flash
 from flask_login import login_required, current_user
 import requests
-
+from werkzeug.security import generate_password_hash
 from securanote.models import Note
 from securanote import supabase
 from securanote.utils import fernet, decrypt_chacha, decrypt_blowfish, blowfish_key
