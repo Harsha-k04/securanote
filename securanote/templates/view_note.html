@@ -68,7 +68,7 @@
             <div id="aiResponse" class="mt-2 max-h-96 overflow-auto">
                 <p id="aiText" class="whitespace-pre-line"></p>
             </div>
-            <form id="saveAiForm" method="POST" action="{{ url_for('ai.save_ai_note') }}" class="mt-2 hidden">
+            <form id="saveAiForm" method="POST" action="{{ url_for('ai.prefill_ai_note') }}" class="mt-2 hidden">
                 <input type="hidden" name="title" id="aiNoteTitle">
                 <input type="hidden" name="content" id="aiNoteContent">
                 <button type="submit" class="btn-secondary px-4 py-2 rounded-lg text-white font-medium">Save as New Note</button>
