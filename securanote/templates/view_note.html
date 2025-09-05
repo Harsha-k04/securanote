@@ -43,6 +43,7 @@
 </head>
 <body class="bg-gradient-to-br from-blue-900 to-blue-500 min-h-screen text-gray-800 p-4 md:p-8">
     <div class="max-w-3xl mx-auto note-container p-6 md:p-8">
+
         <!-- Header -->
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl md:text-3xl font-bold text-blue-700">View Note</h1>
@@ -102,7 +103,7 @@
             <button type="submit" class="btn-primary px-4 py-2 rounded-lg text-white font-medium">Download as PDF</button>
         </form>
 
-        <!-- Share Section -->
+        <!-- WORKING SHARE SECTION -->
         <div class="mt-10 border-t border-blue-200 pt-6">
             <h3 class="text-lg font-semibold text-blue-700 mb-3">🔗 Share this note</h3>
             <form method="POST" class="space-y-4">
@@ -114,7 +115,6 @@
             </form>
         </div>
 
-        <!-- Shareable Link Display -->
         {% if share_link %}
         <div class="mt-6 space-y-4">
             <div class="bg-blue-50 border border-blue-100 p-3 rounded-lg flex items-center">
@@ -122,22 +122,21 @@
             </div>
             <div class="flex flex-wrap gap-4">
                 <a href="https://wa.me/?text={{ share_link | urlencode }}" target="_blank" class="share-option flex flex-col items-center">
-                    <div class="bg-green-500 text-white p-3 rounded-full"><i class="fab fa-whatsapp fa-lg"></i></div>
+                    <div class="bg-green-500 text-white p-3 rounded-full">WA</div>
                     <span class="text-sm mt-1">WhatsApp</span>
                 </a>
                 <a href="https://t.me/share/url?url={{ share_link | urlencode }}" target="_blank" class="share-option flex flex-col items-center">
-                    <div class="bg-blue-500 text-white p-3 rounded-full"><i class="fab fa-telegram fa-lg"></i></div>
+                    <div class="bg-blue-500 text-white p-3 rounded-full">TG</div>
                     <span class="text-sm mt-1">Telegram</span>
                 </a>
                 <a href="https://mail.google.com/mail/?view=cm&fs=1&to=&su=Note Shared from Securanote&body={{ share_link | urlencode }}" target="_blank" class="share-option flex flex-col items-center">
-                    <div class="bg-red-500 text-white p-3 rounded-full"><i class="fas fa-envelope fa-lg"></i></div>
+                    <div class="bg-red-500 text-white p-3 rounded-full">📧</div>
                     <span class="text-sm mt-1">Gmail</span>
                 </a>
             </div>
         </div>
         {% endif %}
 
-        <!-- QR Code Display -->
         {% if qr_code_base64 %}
         <div class="mt-10 space-y-4">
             <h4 class="text-blue-700 font-semibold">📷 QR Code</h4>
@@ -149,6 +148,7 @@
             <p class="text-sm text-gray-500 mt-2">To share via WhatsApp or Telegram, download the QR image and upload manually.</p>
         </div>
         {% endif %}
+
     </div>
 
 <script>
@@ -160,14 +160,13 @@ const aiNoteTitle = document.getElementById("aiNoteTitle");
 const aiNoteContent = document.getElementById("aiNoteContent");
 const saveAiForm = document.getElementById("saveAiForm");
 
-// Properly escape decrypted content for JS
 const noteContent = {{ decrypted|tojson }};
 const noteId = "{{ note.id }}";
 
 aiBtn.addEventListener("click", () => {
     aiPromptSection.classList.toggle("hidden");
     aiText.innerText = "";
-    if(!aiPromptSection.classList.contains("hidden")) {
+    if (!aiPromptSection.classList.contains("hidden")) {
         aiPromptSection.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 });
@@ -190,7 +189,6 @@ aiGenerateBtn.addEventListener("click", async () => {
         const data = await res.json();
         aiText.innerText = data.response || "⚠️ No response from AI.";
 
-        // Prepare form to save AI note
         aiNoteTitle.value = "AI Generated Note";
         aiNoteContent.value = data.response || "";
         saveAiForm.classList.remove("hidden");
