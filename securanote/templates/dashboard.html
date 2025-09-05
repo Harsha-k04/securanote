@@ -145,6 +145,28 @@
       note.style.display = title.includes(input) ? 'block' : 'none';
     });
   }
+   function getQueryParams() {
+    const params = {};
+    window.location.search.substring(1).split("&").forEach(function(pair) {
+      const [key, value] = pair.split("=");
+      if (key) params[decodeURIComponent(key)] = decodeURIComponent(value || "");
+    });
+    return params;
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    const params = getQueryParams();
+    if (params.new_title || params.new_content) {
+      // Show the new note form
+      const form = document.getElementById('note-form');
+      form.classList.remove('hidden');
+      form.scrollIntoView({ behavior: 'smooth' });
+
+      // Pre-fill title and content
+      form.querySelector('input[name="title"]').value = params.new_title || "";
+      form.querySelector('textarea[name="content"]').value = params.new_content || "";
+    }
+  });
 </script>
 </body>
 </html>
