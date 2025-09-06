@@ -388,36 +388,7 @@ def resend_otp(note_id):
     return redirect(url_for("notes.verify_otp", note_id=note_id))
 
 # ------------------------ SHARE NOTE (QR CODE) ------------------------
-@notes_bp.route('/note/<int:note_id>/share', methods=['GET'])
-@login_required
-def share_note(note_id):
-    resp = supabase.table("notes").select("*").eq("id", note_id).execute()
-    if not resp.data:
-        abort(404)
-    note = Note.from_dict(resp.data[0])
-    if note.user_id != current_user.id:
-        abort(403)
-
-    if not note.share_token:
-        share_token = uuid.uuid4().hex
-        supabase.table("notes").update({
-            "share_token": share_token,
-            "views_left": 1,
-            "share_expiry": (datetime.utcnow() + timedelta(days=1)).isoformat()
-        }).eq("id", note_id).execute()
-    else:
-        share_token = note.share_token
-
-    share_url = url_for('notes.view_shared_note', token=share_token, _external=True)
-    qr = qrcode.QRCode(version=1, box_size=10, border=5)
-    qr.add_data(share_url)
-    qr.make(fit=True)
-    img = qr.make_image(fill='black', back_color='white')
-    buf = io.BytesIO()
-    img.save(buf)
-    buf.seek(0)
-    return send_file(buf, mimetype='image/png', download_name=f'share_qr_{note_id}.png')
-# Add this POST route to handle Generate Link form submission
+# ------------------------ SHARE NOTE (LINK + QR CODE) ------------------------
 @notes_bp.route('/note/<int:note_id>/share', methods=['POST'])
 @login_required
 def generate_share_link(note_id):
@@ -443,7 +414,17 @@ def generate_share_link(note_id):
     # Prepare the share link
     share_link = url_for('notes.view_shared_note', token=share_token, _external=True)
 
-    # Fetch note content again to render template
+    # Generate QR code as base64
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(share_link)
+    qr.make(fit=True)
+    img = qr.make_image(fill='black', back_color='white')
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    qr_base64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+
+    # Fetch updated note
     resp = supabase.table("notes").select("*").eq("id", note_id).execute()
     note = Note.from_dict(resp.data[0])
 
@@ -463,7 +444,8 @@ def generate_share_link(note_id):
         "view_note.html",
         note=note,
         decrypted=decrypted,
-        share_link=share_link  # <-- pass the link here
+        share_link=share_link,
+        qr_code=qr_base64  # <-- pass QR code as base64
     )
 
 
