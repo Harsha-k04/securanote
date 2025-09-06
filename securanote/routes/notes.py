@@ -460,9 +460,9 @@ def view_shared_note(token):
     views_left = note.views_left if note.views_left is not None else None
     expiry = note.share_expiry
 
+    # If expired or views finished, show message (no redirect)
     if (views_left is not None and views_left <= 0) or (expiry and datetime.fromisoformat(expiry) < datetime.utcnow()):
-        flash("This shared note has expired or has no remaining views.", "danger")
-        return redirect(url_for('notes.dashboard'))
+        return "<h3>This note is no longer available (expired or view limit reached).</h3>"
 
     # Decrypt content
     decrypted = ''
@@ -474,7 +474,7 @@ def view_shared_note(token):
         elif note.encryption_type == 'Blowfish':
             decrypted = decrypt_blowfish(note.encrypted_content, blowfish_key)
     except Exception:
-        flash("Failed to decrypt shared note.", "danger")
+        return "<h3>Failed to decrypt shared note.</h3>"
 
     # Reduce views_left if it’s limited
     if views_left is not None:
@@ -483,6 +483,7 @@ def view_shared_note(token):
         }).eq("id", note.id).execute()
 
     return render_template("shared_note.html", note=note, decrypted=decrypted)
+
 
 # ------------------------ EXPORT NOTE AS PDF ------------------------
 @notes_bp.route('/note/<int:note_id>/export_pdf', methods=['GET', 'POST'])
