@@ -137,17 +137,28 @@
         </div>
         {% endif %}
 
-        {% if qr_code_base64 %}
+        {% if qr_code %}
         <div class="mt-10 space-y-4">
-            <h4 class="text-blue-700 font-semibold">📷 QR Code</h4>
-            <img src="data:image/png;base64,{{ qr_code_base64 }}" alt="QR Code" class="max-w-[200px] rounded shadow">
-            <div class="space-x-3 mt-3">
-                <a href="https://mail.google.com/mail/?view=cm&fs=1&to=&su=QR%20Code%20for%20Your%20Note&body=Hi,%0A%0AHere%20is%20the%20QR%20code%20for%20accessing%20my%20note:%0A{{ qr_image_url | urlencode }}%0A%0AScan%20it%20to%20view%20the%20note.%0A" target="_blank" class="btn-secondary px-3 py-2 rounded-lg text-white text-sm">Share via Gmail</a>
-                <a href="data:image/png;base64,{{ qr_code_base64 }}" download="qr_code.png" class="btn-primary px-3 py-2 rounded-lg text-white text-sm">Download QR</a>
-            </div>
-            <p class="text-sm text-gray-500 mt-2">To share via WhatsApp or Telegram, download the QR image and upload manually.</p>
+        <h4 class="text-blue-700 font-semibold">📷 QR Code</h4>
+        <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code" class="max-w-[200px] rounded shadow">
+        <div class="space-x-3 mt-3">
+            <a href="https://mail.google.com/mail/?view=cm&fs=1&to=&su=QR%20Code%20for%20Your%20Note&body=Hi,%0A%0AHere%20is%20the%20QR%20code%20for%20accessing%20my%20note:%0A(data:image/png;base64,{{ qr_code }})%0A%0AScan%20it%20to%20view%20the%20note.%0A" 
+               target="_blank" 
+               class="btn-secondary px-3 py-2 rounded-lg text-white text-sm">
+               Share via Gmail
+            </a>
+            <a href="data:image/png;base64,{{ qr_code }}" 
+               download="qr_code.png" 
+               class="btn-primary px-3 py-2 rounded-lg text-white text-sm">
+               Download QR
+            </a>
+        </div>
+        <p class="text-sm text-gray-500 mt-2">
+            To share via WhatsApp or Telegram, download the QR image and upload manually.
+        </p>
         </div>
         {% endif %}
+
 
     </div>
 
