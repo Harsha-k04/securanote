@@ -477,7 +477,7 @@ def view_shared_note(token):
         "views_left": note.views_left - 1
     }).eq("id", note.id).execute()
 
-    return render_template("view_shared_note.html", note=note, decrypted=decrypted)
+    return render_template("shared_note.html", note=note, decrypted=decrypted)
 
 
 # ------------------------ EXPORT NOTE AS PDF ------------------------
