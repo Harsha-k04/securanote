@@ -456,7 +456,11 @@ def view_shared_note(token):
         abort(404)
     note = Note.from_dict(resp.data[0])
 
-    if note.views_left <= 0 or (note.share_expiry and datetime.fromisoformat(note.share_expiry) < datetime.utcnow()):
+    # Handle None safely (None = unlimited views)
+    views_left = note.views_left if note.views_left is not None else None
+    expiry = note.share_expiry
+
+    if (views_left is not None and views_left <= 0) or (expiry and datetime.fromisoformat(expiry) < datetime.utcnow()):
         flash("This shared note has expired or has no remaining views.", "danger")
         return redirect(url_for('notes.dashboard'))
 
@@ -472,13 +476,13 @@ def view_shared_note(token):
     except Exception:
         flash("Failed to decrypt shared note.", "danger")
 
-    # Reduce views_left by 1
-    supabase.table("notes").update({
-        "views_left": note.views_left - 1
-    }).eq("id", note.id).execute()
+    # Reduce views_left if it’s limited
+    if views_left is not None:
+        supabase.table("notes").update({
+            "views_left": max(0, views_left - 1)
+        }).eq("id", note.id).execute()
 
     return render_template("shared_note.html", note=note, decrypted=decrypted)
-
 
 # ------------------------ EXPORT NOTE AS PDF ------------------------
 @notes_bp.route('/note/<int:note_id>/export_pdf', methods=['GET', 'POST'])
